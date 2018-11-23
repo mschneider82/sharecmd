@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"runtime"
@@ -13,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var providers = []string{"dropbox"}
+var providers = []string{"dropbox", "googledrive"}
 
 // Config File Structure
 type Config struct {
@@ -106,13 +107,39 @@ func configSetup() error {
 		fmt.Printf("Prompt failed %v\n", err)
 		return err
 	}
+	config.Provider = provider
+	fmt.Printf("You choose %q\n", provider)
 
 	switch provider {
+	case "googledrive":
+		conf := oauth2GoogleDriveConfig()
+		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline))
+		fmt.Printf("2. Click \"Allow\" (you might have to log in first).\n")
+		fmt.Printf("3. Copy the authorization code.\n")
+
+		authorizationprompt := promptui.Prompt{
+			Label:   "Authorization Code",
+			Default: "",
+		}
+		authcode, err := authorizationprompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+
+		tok, err := conf.Exchange(context.TODO(), authcode)
+		if err != nil {
+			log.Fatalf("Unable to retrieve token from web %v", err)
+		}
+
+		tokenB, err := json.Marshal(tok)
+		if err != nil {
+			log.Fatalf("Unable to marshal json token %v", err)
+		}
+
+		config.ProviderSettings["googletoken"] = string(tokenB)
+
 	case "dropbox":
-		config.Provider = provider
-
-		fmt.Printf("You choose %q\n", provider)
-
 		conf := oauth2DropboxConfig()
 		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state"))
 		fmt.Printf("2. Click \"Allow\" (you might have to log in first).\n")

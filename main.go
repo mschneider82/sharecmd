@@ -23,16 +23,25 @@ func main() {
 		if err != nil {
 			panic(fmt.Sprintf("lookupConfig: %v \n", err))
 		}
-
-		fmt.Println("Got settings for provider: ", cfg.Provider)
-
-		dbx := NewDropboxProvider(cfg.ProviderSettings["token"])
-		dst, err := dbx.Upload(*file, "")
-		if err != nil {
-			panic(err)
-		}
-		if link, err := dbx.GetLink(dst); err == nil {
-			fmt.Println(link)
+		switch cfg.Provider {
+		case "googledrive":
+			gdrive := NewGoogleDriveProvider(cfg.ProviderSettings["googletoken"])
+			fileid, err := gdrive.Upload(*file, "")
+			if err != nil {
+				panic(err)
+			}
+			if link, err := gdrive.GetLink(fileid); err == nil {
+				fmt.Println(link)
+			}
+		case "dropbox":
+			dbx := NewDropboxProvider(cfg.ProviderSettings["token"])
+			dst, err := dbx.Upload(*file, "")
+			if err != nil {
+				panic(err)
+			}
+			if link, err := dbx.GetLink(dst); err == nil {
+				fmt.Println(link)
+			}
 		}
 	}
 }
