@@ -7,13 +7,9 @@ import (
 )
 
 var (
-	//app        = kingpin.New("store", "CLI Tool to share files (c) Matthias Schneider")
 	configFile = kingpin.Flag("config", "Client configuration file").Default(userHomeDir() + "/.config/sharecmd/config.json").String()
 	setup      = kingpin.Flag("setup", "Setup client configuration").Bool()
-
-	file = kingpin.Arg("file", "filename to upload").File()
-
-	appname = "gostore"
+	file       = kingpin.Arg("file", "filename to upload").File()
 )
 
 func main() {
