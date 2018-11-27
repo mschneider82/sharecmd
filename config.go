@@ -33,6 +33,7 @@ func userHomeDir() string {
 	return os.Getenv(env)
 }
 
+// Write config to disk
 func (c Config) Write() error {
 	err := os.MkdirAll(path.Dir(c.Path), 0700)
 	if err != nil {
@@ -70,6 +71,7 @@ func LoadConfig(path string) (Config, error) {
 	return config, err
 }
 
+// lookupConfig search config and load it
 func lookupConfig() (Config, error) {
 	path := *configFile
 	if path == "" {
@@ -77,19 +79,8 @@ func lookupConfig() (Config, error) {
 	}
 
 	config, err := LoadConfig(path)
-	if err != nil {
-		return config, err
-	}
-	return config, nil
+	return config, err
 }
-
-/*
- ██████  ██████  ███    ██ ███████ ██  ██████  ███████ ███████ ████████ ██    ██ ██████
-██      ██    ██ ████   ██ ██      ██ ██       ██      ██         ██    ██    ██ ██   ██
-██      ██    ██ ██ ██  ██ █████   ██ ██   ███ ███████ █████      ██    ██    ██ ██████
-██      ██    ██ ██  ██ ██ ██      ██ ██    ██      ██ ██         ██    ██    ██ ██
- ██████  ██████  ██   ████ ██      ██  ██████  ███████ ███████    ██     ██████  ██
-*/
 
 func configSetup() error {
 	config, err := lookupConfig()

@@ -9,12 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/davecgh/go-spew/spew"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/mitchellh/ioprogress"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	drive "google.golang.org/api/drive/v2"
+	drive "google.golang.org/api/drive/v3"
 )
 
 //https://developers.google.com/drive/api/v3/quickstart/go
@@ -41,7 +40,6 @@ func NewGoogleDriveProvider(token string) *GoogleDriveProvider {
 	if err != nil {
 		log.Fatalf("Unable to parse config file: %v", err)
 	}
-	spew.Dump(tok)
 
 	return &GoogleDriveProvider{token: tok, Config: oauth2GoogleDriveConfig()}
 }
@@ -72,22 +70,16 @@ func (c *GoogleDriveProvider) Upload(file *os.File, path string) (fileID string,
 		Size: fileInfo.Size(),
 	}
 	parendID := getOrCreateFolder(srv, "sharecmd")
-	p := &drive.ParentReference{Id: parendID}
-	permission := &drive.Permission{
-		Type:     "anyone",
-		Role:     "reader",
-		WithLink: true,
-	}
-	f := &drive.File{
-		Title:          filepath.Base(file.Name()),
-		Parents:        []*drive.ParentReference{p},
-		Permissions:    []*drive.Permission{permission},
-		UserPermission: permission,
-		Shared:         true,
-	}
-	r, err := srv.Files.Insert(f).Media(progressbar).Do()
 
-	return r.Id, err
+	f := &drive.File{
+		Name:    filepath.Base(file.Name()),
+		Parents: []string{parendID},
+	}
+	r, err := srv.Files.Create(f).Media(progressbar).Do()
+	if err != nil {
+		return "", err
+	}
+	return r.Id, nil
 }
 
 func (c *GoogleDriveProvider) GetLink(filepath string) (string, error) {
@@ -100,22 +92,21 @@ func (c *GoogleDriveProvider) GetLink(filepath string) (string, error) {
 	}
 
 	permission := &drive.Permission{
-		Type:     "anyone",
-		Role:     "reader",
-		WithLink: true,
-	}
-	f := &drive.File{
-		Id:             fileID,
-		Permissions:    []*drive.Permission{permission},
-		UserPermission: permission,
-		Shared:         true,
+		Type: "anyone",
+		Role: "reader",
 	}
 
-	r, err := srv.Files.Update(fileID, f).Do()
-	spew.Dump(r)
-	spew.Dump(err)
+	_, err = srv.Permissions.Create(fileID, permission).Do()
+	if err != nil {
+		return "", err
+	}
+	f, err := srv.Files.Get(fileID).Do()
+	if err != nil {
+		return "", err
+	}
+	link := fmt.Sprintf("https://drive.google.com/open?id=%s", f.Id)
 
-	return "", nil
+	return link, nil
 }
 
 func getOrCreateFolder(d *drive.Service, folderName string) string {
@@ -123,20 +114,20 @@ func getOrCreateFolder(d *drive.Service, folderName string) string {
 	if folderName == "" {
 		folderName = "sharecmd"
 	}
-	q := fmt.Sprintf("title=\"%s\" and mimeType=\"application/vnd.google-apps.folder\"", folderName)
+	q := fmt.Sprintf("name=\"%s\" and mimeType=\"application/vnd.google-apps.folder\"", folderName)
 
-	r, err := d.Files.List().Q(q).MaxResults(1).Do()
+	r, err := d.Files.List().Q(q).Do()
 	if err != nil {
-		log.Fatalf("Unable to retrieve foldername.", err)
+		log.Fatalf("Unable to retrieve foldername: %s", err.Error())
 	}
 
-	if len(r.Items) > 0 {
-		folderID = r.Items[0].Id
+	if len(r.Files) > 0 {
+		folderID = r.Files[0].Id
 	} else {
 		// no folder found create new
 		fmt.Printf("Folder not found. Create new folder : %s\n", folderName)
-		f := &drive.File{Title: folderName, Description: "Auto Create by sharecmd", MimeType: "application/vnd.google-apps.folder"}
-		r, err := d.Files.Insert(f).Do()
+		f := &drive.File{Name: folderName, Description: "Auto Create by sharecmd", MimeType: "application/vnd.google-apps.folder"}
+		r, err := d.Files.Create(f).Do()
 		if err != nil {
 			fmt.Printf("An error occurred when create folder: %v\n", err)
 		}

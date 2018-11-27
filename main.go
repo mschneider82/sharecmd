@@ -12,36 +12,42 @@ var (
 	file       = kingpin.Arg("file", "filename to upload").File()
 )
 
+// ShareCmd cli app
+type ShareCmd struct {
+	config   *Config
+	provider Provider
+}
+
 func main() {
 	kingpin.Parse()
 
 	if *setup {
 		configSetup()
-	} else {
-
+	}
+	if file != nil {
+		sharecmd := ShareCmd{}
 		cfg, err := lookupConfig()
 		if err != nil {
 			panic(fmt.Sprintf("lookupConfig: %v \n", err))
 		}
-		switch cfg.Provider {
+		sharecmd.config = &cfg
+
+		switch sharecmd.config.Provider {
 		case "googledrive":
-			gdrive := NewGoogleDriveProvider(cfg.ProviderSettings["googletoken"])
-			fileid, err := gdrive.Upload(*file, "")
-			if err != nil {
-				panic(err)
-			}
-			if link, err := gdrive.GetLink(fileid); err == nil {
-				fmt.Println(link)
-			}
+			sharecmd.provider = NewGoogleDriveProvider(sharecmd.config.ProviderSettings["googletoken"])
 		case "dropbox":
-			dbx := NewDropboxProvider(cfg.ProviderSettings["token"])
-			dst, err := dbx.Upload(*file, "")
-			if err != nil {
-				panic(err)
-			}
-			if link, err := dbx.GetLink(dst); err == nil {
-				fmt.Println(link)
-			}
+			sharecmd.provider = NewDropboxProvider(cfg.ProviderSettings["token"])
 		}
+
+		fileid, err := sharecmd.provider.Upload(*file, "")
+		if err != nil {
+			panic(err)
+		}
+		link, err := sharecmd.provider.GetLink(fileid)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(link)
+
 	}
 }
