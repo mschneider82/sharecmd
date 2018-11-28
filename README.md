@@ -12,7 +12,7 @@ Share your files easily with friends using Cloudproviders.
 # Howto share?
 
 ```
-user@srv# sharecmd /etc/hosts
+user@srv# share /etc/hosts
 Uploading 361 B/361 B
 2018/11/28 19:03:07 URL: https://drive.google.com/open?id=1C77TZBMT0PESUvsIPetGzrK36LqGFqza
 URL copied to clipboard!
@@ -21,7 +21,7 @@ URL copied to clipboard!
 # Howto setup?
 
 ```
-user@srv# sharecmd --setup
+user@srv# share --setup
 ```
 
 # Howto install?
