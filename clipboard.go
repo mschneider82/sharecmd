@@ -4,9 +4,17 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
+
+	"github.com/atotto/clipboard"
 )
 
 func toClip(output string) {
+	if err := clipboard.WriteAll(output); err != nil {
+		log.Fatalf("Can't copy link to clipboard: %s", err.Error())
+	}
+}
+
+func toClipDeprecated(output string) {
 	var cmd *exec.Cmd
 	switch os := runtime.GOOS; os {
 	case "linux":
