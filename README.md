@@ -24,6 +24,11 @@ URL copied to clipboard!
 user@srv# sharecmd --setup
 ```
 
+# Howto install?
+
+[Download precompiled binarys](https://github.com/mschneider82/sharecmd/releases) for your OS
+or compile it from source.
+
 # Notes:
 Sharecmd uploads the file to the configured cloud provider and does a public
 share of the file for anyone who has the link. The link will be copyed to system
