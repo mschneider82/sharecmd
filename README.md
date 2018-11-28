@@ -23,6 +23,7 @@ URL copied to clipboard!
 ```
 user@srv# share --setup
 ```
+Select a provider and connect the app to your account. The token will be saved to your disk.
 
 # Howto install?
 
