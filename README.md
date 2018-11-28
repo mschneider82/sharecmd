@@ -2,7 +2,7 @@
 
 # Go Share files!
 
-Share your files easily with friends using Cloudproviders.
+Share your files with your friends using Cloudproviders with just one command.
 
 # Supported Cloud Providers:
 
