@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -37,6 +38,9 @@ func main() {
 			sharecmd.provider = NewGoogleDriveProvider(sharecmd.config.ProviderSettings["googletoken"])
 		case "dropbox":
 			sharecmd.provider = NewDropboxProvider(cfg.ProviderSettings["token"])
+		default:
+			configSetup()
+			os.Exit(0)
 		}
 
 		fileid, err := sharecmd.provider.Upload(*file, "")

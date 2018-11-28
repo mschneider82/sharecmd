@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/davecgh/go-spew/spew"
 	humanize "github.com/dustin/go-humanize"
 	//"github.com/mitchellh/ioprogress"
 	"github.com/coreos/ioprogress"
@@ -121,7 +122,7 @@ func getOrCreateFolder(d *drive.Service, folderName string) string {
 	if err != nil {
 		log.Fatalf("Unable to retrieve foldername: %s", err.Error())
 	}
-
+	spew.Dump(r.Files)
 	if len(r.Files) > 0 {
 		folderID = r.Files[0].Id
 	} else {
