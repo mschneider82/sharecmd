@@ -37,10 +37,10 @@ clipboard (windows/linux/macos)
 # Provider Notes:
 
 ## Dropbox:
-It uploads alls files to /Apps/sharecmd (folder auto generated)
+It uploads all files to /Apps/sharecmd (folder auto generated)
 
 ## Googledrive:
-It uploads alls files to /sharecmd (folder auto generated)
+It uploads all files to /sharecmd (folder auto generated)
 
 
 # Documentation:
