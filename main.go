@@ -24,6 +24,7 @@ func main() {
 
 	if *setup {
 		configSetup()
+		os.Exit(0)
 	}
 	if file != nil {
 		sharecmd := ShareCmd{}

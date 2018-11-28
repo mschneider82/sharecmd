@@ -40,7 +40,7 @@ clipboard (windows/linux/macos)
 It uploads alls files to /Apps/sharecmd (folder auto generated)
 
 ## Googledrive:
-It uploads alls files to /sharecmd (folder may needs to be created)
+It uploads alls files to /sharecmd (folder auto generated)
 
 
 # Documentation:
