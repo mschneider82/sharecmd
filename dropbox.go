@@ -15,7 +15,8 @@ import (
 	"github.com/dustin/go-humanize"
 	"golang.org/x/oauth2"
 
-	"github.com/mitchellh/ioprogress"
+	//"github.com/mitchellh/ioprogress"
+	"github.com/coreos/ioprogress"
 )
 
 const chunkSize int64 = 1 << 24
@@ -131,12 +132,7 @@ func (c *DropboxProvider) GetLink(filepath string) (string, error) {
 
 	res, err := share.CreateSharedLinkWithSettings(arg)
 	if err != nil {
-		if err.Error() == sharing.CreateSharedLinkWithSettingsErrorSharedLinkAlreadyExists {
-			fmt.Println("exist bereits")
-			return "", nil
-		}
-		//
-		return "cannot create shared link", err
+		return "", err
 	}
 
 	switch sl := res.(type) {

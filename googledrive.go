@@ -10,7 +10,8 @@ import (
 	"path/filepath"
 
 	humanize "github.com/dustin/go-humanize"
-	"github.com/mitchellh/ioprogress"
+	//"github.com/mitchellh/ioprogress"
+	"github.com/coreos/ioprogress"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	drive "google.golang.org/api/drive/v3"
@@ -125,11 +126,11 @@ func getOrCreateFolder(d *drive.Service, folderName string) string {
 		folderID = r.Files[0].Id
 	} else {
 		// no folder found create new
-		fmt.Printf("Folder not found. Create new folder : %s\n", folderName)
+		log.Printf("Folder not found. Create new folder : %s\n", folderName)
 		f := &drive.File{Name: folderName, Description: "Auto Create by sharecmd", MimeType: "application/vnd.google-apps.folder"}
 		r, err := d.Files.Create(f).Do()
 		if err != nil {
-			fmt.Printf("An error occurred when create folder: %v\n", err)
+			log.Printf("An error occurred when create folder: %v\n", err)
 		}
 		folderID = r.Id
 	}

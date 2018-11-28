@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -28,7 +28,7 @@ func main() {
 		sharecmd := ShareCmd{}
 		cfg, err := lookupConfig()
 		if err != nil {
-			panic(fmt.Sprintf("lookupConfig: %v \n", err))
+			log.Fatalf("lookupConfig: %v \n", err)
 		}
 		sharecmd.config = &cfg
 
@@ -41,13 +41,13 @@ func main() {
 
 		fileid, err := sharecmd.provider.Upload(*file, "")
 		if err != nil {
-			panic(err)
+			log.Fatalf("Can't upload file: %s", err.Error())
 		}
 		link, err := sharecmd.provider.GetLink(fileid)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Can't get link for file: %s", err.Error())
 		}
-		fmt.Println(link)
-
+		log.Printf("URL: %s", link)
+		toClip(link)
 	}
 }
