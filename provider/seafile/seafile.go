@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -145,8 +144,6 @@ func (s *Provider) Upload(file *os.File, path string) (fileID string, err error)
 }
 
 func uploadfile(uploadlink, folder, filename, token string, src io.Reader) (string, error) {
-	log.Println("Uploading", folder+filename)
-
 	requestbody := &bytes.Buffer{}
 	multipartWriter := multipart.NewWriter(requestbody)
 	part, err := multipartWriter.CreateFormFile("file", filename)

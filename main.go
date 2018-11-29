@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -61,7 +62,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Can't get link for file: %s", err.Error())
 		}
-		log.Printf("URL: %s", link)
+		fmt.Printf("URL: %s\n", link)
 		clipboard.ToClip(link)
 	}
 }
