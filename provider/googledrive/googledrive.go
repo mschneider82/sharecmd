@@ -9,9 +9,8 @@ import (
 	"os"
 	"path/filepath"
 
-	humanize "github.com/dustin/go-humanize"
-	//"github.com/mitchellh/ioprogress"
 	"github.com/coreos/ioprogress"
+	humanize "github.com/dustin/go-humanize"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	drive "google.golang.org/api/drive/v3"
@@ -19,8 +18,8 @@ import (
 
 //https://developers.google.com/drive/api/v3/quickstart/go
 
-// GoogleDriveProvider implements a provider
-type GoogleDriveProvider struct {
+// Provider implements a provider
+type Provider struct {
 	Config *oauth2.Config
 	token  *oauth2.Token
 }
@@ -36,21 +35,23 @@ func OAuth2GoogleDriveConfig() *oauth2.Config {
 	return config
 }
 
-func NewGoogleDriveProvider(token string) *GoogleDriveProvider {
+// NewProvider creates a new Provider
+func NewProvider(token string) *Provider {
 	tok := &oauth2.Token{}
 	err := json.Unmarshal([]byte(token), tok)
 	if err != nil {
 		log.Fatalf("Unable to parse config file: %v", err)
 	}
 
-	return &GoogleDriveProvider{token: tok, Config: OAuth2GoogleDriveConfig()}
+	return &Provider{token: tok, Config: OAuth2GoogleDriveConfig()}
 }
 
-func (c *GoogleDriveProvider) getClient() *http.Client {
+func (c *Provider) getClient() *http.Client {
 	return c.Config.Client(context.Background(), c.token)
 }
 
-func (c *GoogleDriveProvider) Upload(file *os.File, path string) (fileID string, err error) {
+// Upload the file
+func (c *Provider) Upload(file *os.File, path string) (fileID string, err error) {
 
 	fileInfo, err := file.Stat()
 	if err != nil {
@@ -84,7 +85,8 @@ func (c *GoogleDriveProvider) Upload(file *os.File, path string) (fileID string,
 	return r.Id, nil
 }
 
-func (c *GoogleDriveProvider) GetLink(filepath string) (string, error) {
+// GetLink for fileid
+func (c *Provider) GetLink(filepath string) (string, error) {
 	fileID := filepath
 
 	client := c.getClient()

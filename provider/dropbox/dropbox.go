@@ -26,9 +26,10 @@ var (
 	personalAppSecret = "mi55rqbz0rgb16f"
 )
 
-// Tokenmap example: { "token": "xxx" }
+// TokenMap example: { "token": "xxx" }
 type TokenMap map[string]string
 
+// OAuth2DropboxConfig creates a oauth config
 func OAuth2DropboxConfig() *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     personalAppKey,
@@ -70,15 +71,15 @@ func writeTokens(filePath string, tokens TokenMap) {
 	}
 }
 
-// DropboxProvider implements a provider using dropbox sdk
-type DropboxProvider struct {
+// Provider implements a provider using dropbox sdk
+type Provider struct {
 	Config dropbox.Config
 	token  string
 }
 
-func NewDropboxProvider(token string) *DropboxProvider {
-
-	return &DropboxProvider{
+// NewProvider creates a new Provider
+func NewProvider(token string) *Provider {
+	return &Provider{
 		Config: dropbox.Config{
 			Token:    token,
 			LogLevel: dropbox.LogOff,
@@ -86,7 +87,8 @@ func NewDropboxProvider(token string) *DropboxProvider {
 	}
 }
 
-func (c *DropboxProvider) Upload(file *os.File, path string) (dst string, err error) {
+// Upload the file to dropbox
+func (c *Provider) Upload(file *os.File, path string) (dst string, err error) {
 	//
 	if path == "" {
 		path = "/"
@@ -126,7 +128,8 @@ func (c *DropboxProvider) Upload(file *os.File, path string) (dst string, err er
 	return dst, nil
 }
 
-func (c *DropboxProvider) GetLink(filepath string) (string, error) {
+// GetLink for file
+func (c *Provider) GetLink(filepath string) (string, error) {
 	share := sharing.New(c.Config)
 	arg := sharing.NewCreateSharedLinkWithSettingsArg(filepath)
 

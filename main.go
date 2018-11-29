@@ -46,9 +46,9 @@ func main() {
 		case "seafile":
 			sharecmd.provider = seafile.NewProvider(sharecmd.config.ProviderSettings["url"], sharecmd.config.ProviderSettings["token"], sharecmd.config.ProviderSettings["repoid"])
 		case "googledrive":
-			sharecmd.provider = googledrive.NewGoogleDriveProvider(sharecmd.config.ProviderSettings["googletoken"])
+			sharecmd.provider = googledrive.NewProvider(sharecmd.config.ProviderSettings["googletoken"])
 		case "dropbox":
-			sharecmd.provider = dropbox.NewDropboxProvider(cfg.ProviderSettings["token"])
+			sharecmd.provider = dropbox.NewProvider(cfg.ProviderSettings["token"])
 		default:
 			config.Setup(*configFile)
 			os.Exit(0)
