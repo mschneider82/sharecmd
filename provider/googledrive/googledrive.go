@@ -1,4 +1,4 @@
-package main
+package googledrive
 
 import (
 	"context"
@@ -19,13 +19,14 @@ import (
 
 //https://developers.google.com/drive/api/v3/quickstart/go
 
-// GoogleDriveProvider implements a provider using dropbox sdk
+// GoogleDriveProvider implements a provider
 type GoogleDriveProvider struct {
 	Config *oauth2.Config
 	token  *oauth2.Token
 }
 
-func oauth2GoogleDriveConfig() *oauth2.Config {
+// OAuth2GoogleDriveConfig ...
+func OAuth2GoogleDriveConfig() *oauth2.Config {
 	b := []byte(`{"installed":{"client_id":"26115953275-7971erj532s8d98vlso25467iudikbvf.apps.googleusercontent.com","project_id":"sharecmd-223413","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://www.googleapis.com/oauth2/v3/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"JblUhzPxWD-9zvJ7XBPr2Du8","redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]}}`)
 	//config, err := google.ConfigFromJSON(b, drive.DriveMetadataScope)
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
@@ -42,7 +43,7 @@ func NewGoogleDriveProvider(token string) *GoogleDriveProvider {
 		log.Fatalf("Unable to parse config file: %v", err)
 	}
 
-	return &GoogleDriveProvider{token: tok, Config: oauth2GoogleDriveConfig()}
+	return &GoogleDriveProvider{token: tok, Config: OAuth2GoogleDriveConfig()}
 }
 
 func (c *GoogleDriveProvider) getClient() *http.Client {

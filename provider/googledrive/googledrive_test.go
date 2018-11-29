@@ -1,12 +1,14 @@
-package main
+package googledrive
 
 import (
 	"fmt"
 	"testing"
+
+	"github.com/mschneider82/sharecmd/config"
 )
 
 func TestGoogleDriveProvider_GetLink(t *testing.T) {
-	cfg, err := lookupConfig()
+	cfg, err := config.lookupConfig("config.json")
 	if err != nil {
 		panic(fmt.Sprintf("lookupConfig: %v \n", err))
 	}

@@ -1,4 +1,4 @@
-package main
+package dropbox
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ var (
 // Tokenmap example: { "token": "xxx" }
 type TokenMap map[string]string
 
-func oauth2DropboxConfig() *oauth2.Config {
+func OAuth2DropboxConfig() *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     personalAppKey,
 		ClientSecret: personalAppSecret,

@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 	"runtime"
 
 	"github.com/manifoldco/promptui"
+	"github.com/mschneider82/sharecmd/provider/dropbox"
+	"github.com/mschneider82/sharecmd/provider/googledrive"
 	"golang.org/x/oauth2"
 )
 
@@ -23,7 +25,8 @@ type Config struct {
 	Path             string
 }
 
-func userHomeDir() string {
+// UserHomeDir
+func UserHomeDir() string {
 	env := "HOME"
 	if runtime.GOOS == "windows" {
 		env = "USERPROFILE"
@@ -71,19 +74,19 @@ func LoadConfig(path string) (Config, error) {
 	return config, err
 }
 
-// lookupConfig search config and load it
-func lookupConfig() (Config, error) {
-	path := *configFile
-	if path == "" {
-		path = userHomeDir() + "/.config/sharecmd/config.json"
+// LookupConfig search config and load it
+func LookupConfig(configfilepath string) (Config, error) {
+	if configfilepath == "" {
+		configfilepath = UserHomeDir() + "/.config/sharecmd/config.json"
 	}
 
-	config, err := LoadConfig(path)
+	config, err := LoadConfig(configfilepath)
 	return config, err
 }
 
-func configSetup() error {
-	config, err := lookupConfig()
+// Setup asks user for input
+func Setup(configfilepath string) error {
+	config, err := LookupConfig(configfilepath)
 	if err != nil {
 		return err
 	}
@@ -103,7 +106,7 @@ func configSetup() error {
 
 	switch provider {
 	case "googledrive":
-		conf := oauth2GoogleDriveConfig()
+		conf := googledrive.OAuth2GoogleDriveConfig()
 		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline))
 		fmt.Printf("2. Click \"Allow\" (you might have to log in first).\n")
 		fmt.Printf("3. Copy the authorization code.\n")
@@ -131,7 +134,7 @@ func configSetup() error {
 		config.ProviderSettings["googletoken"] = string(tokenB)
 
 	case "dropbox":
-		conf := oauth2DropboxConfig()
+		conf := dropbox.OAuth2DropboxConfig()
 		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state"))
 		fmt.Printf("2. Click \"Allow\" (you might have to log in first).\n")
 		fmt.Printf("3. Copy the authorization code.\n")

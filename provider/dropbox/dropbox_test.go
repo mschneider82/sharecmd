@@ -1,14 +1,15 @@
-package main
+package dropbox
 
 import (
 	"os"
 	"testing"
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox"
+	"github.com/mschneider82/sharecmd/config"
 )
 
 func TestDropboxProvider_Upload(t *testing.T) {
-	cfg, err := lookupConfig()
+	cfg, err := config.lookupConfig("config.json")
 	if err != nil {
 		t.Fatalf("fail: %s", err.Error())
 	}
