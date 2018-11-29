@@ -8,6 +8,7 @@ Share your files with your friends using Cloudproviders with just one command.
 
 * Dropbox
 * Google Drive
+* Seafile (also private hosted)
 
 # Howto share?
 
@@ -49,6 +50,8 @@ It uploads all files to /Apps/sharecmd (folder auto generated)
 ## Googledrive:
 It uploads all files to /sharecmd (folder auto generated)
 
+## Seafile:
+It creates a new Library called sharecmd on setup
 
 # Documentation:
 [![GoDoc](https://godoc.org/github.com/mschneider82/easygo?status.svg)](https://godoc.org/github.com/mschneider82/easygo)
