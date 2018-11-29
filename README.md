@@ -54,4 +54,4 @@ It uploads all files to /sharecmd (folder auto generated)
 It creates a new Library called sharecmd on setup
 
 # Documentation:
-[![GoDoc](https://godoc.org/github.com/mschneider82/easygo?status.svg)](https://godoc.org/github.com/mschneider82/easygo)
+[![GoDoc](https://godoc.org/github.com/mschneider82/sharecmd?status.svg)](https://godoc.org/github.com/mschneider82/sharecmd)
