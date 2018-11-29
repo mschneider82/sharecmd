@@ -29,6 +29,22 @@ archive:
   format_overrides:
   - goos: windows
     format: zip
+brew:
+  github:
+    owner: mschneider82 
+    name: sharecmd
+  folder: Formula
+  homepage: https://github.com/mschneider82/sharecmd
+  description: Share your files with your friends using Cloudproviders with just one command.
+nfpm:
+  name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  homepage: https://github.com/mschneider82/sharecmd
+  description: Share your files with your friends using Cloudproviders with just one command.
+  maintainer: Matthias Schneider <ms@wck.biz>
+  license: Apache
+  formats:
+  - deb
+  - rpm
 checksum:
   name_template: 'checksums.txt'
 snapshot:
