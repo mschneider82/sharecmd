@@ -40,7 +40,7 @@ func UserHomeDir() string {
 
 // Write config to disk
 func (c Config) Write() error {
-	err := os.MkdirAll(path.Dir(c.Path), 0700)
+	err := os.MkdirAll(path.Dir(UserHomeDir()+"/.config/sharecmd/config.json"), 0700)
 	if err != nil {
 		return err
 	}
