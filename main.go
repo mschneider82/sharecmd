@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/mschneider82/sharecmd/provider/seafile"
+
 	"github.com/mschneider82/sharecmd/clipboard"
 	"github.com/mschneider82/sharecmd/config"
 	"github.com/mschneider82/sharecmd/provider"
@@ -40,6 +42,8 @@ func main() {
 		sharecmd.config = &cfg
 
 		switch sharecmd.config.Provider {
+		case "seafile":
+			sharecmd.provider = seafile.NewProvider(sharecmd.config.ProviderSettings["url"], sharecmd.config.ProviderSettings["token"], sharecmd.config.ProviderSettings["repoid"])
 		case "googledrive":
 			sharecmd.provider = googledrive.NewGoogleDriveProvider(sharecmd.config.ProviderSettings["googletoken"])
 		case "dropbox":

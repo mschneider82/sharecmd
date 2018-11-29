@@ -9,14 +9,16 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 	"github.com/mschneider82/sharecmd/provider/dropbox"
 	"github.com/mschneider82/sharecmd/provider/googledrive"
+	"github.com/mschneider82/sharecmd/provider/seafile"
 	"golang.org/x/oauth2"
 )
 
-var providers = []string{"dropbox", "googledrive"}
+var providers = []string{"dropbox", "googledrive", "seafile"}
 
 // Config File Structure
 type Config struct {
@@ -42,9 +44,8 @@ func (c Config) Write() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Saving config to %s \n", c.Path)
-	p := c.Path
-	c.Path = ""
+	fmt.Printf("Saving config to %s \n", UserHomeDir()+"/.config/sharecmd/config.json")
+	p := UserHomeDir() + "/.config/sharecmd/config.json"
 	output, err := os.Create(p)
 	if err != nil {
 		return err
@@ -86,11 +87,10 @@ func LookupConfig(configfilepath string) (Config, error) {
 
 // Setup asks user for input
 func Setup(configfilepath string) error {
-	config, err := LookupConfig(configfilepath)
-	if err != nil {
-		return err
+	config := Config{
+		Path:             "/sharecmd",
+		ProviderSettings: make(map[string]string),
 	}
-
 	prompt := promptui.Select{
 		Label: "Select Provider",
 		Items: providers,
@@ -105,6 +105,69 @@ func Setup(configfilepath string) error {
 	fmt.Printf("You choose %q\n", provider)
 
 	switch provider {
+	case "seafile":
+		conf := seafile.Config{}
+		urlPrompt := promptui.Prompt{
+			Label:   "Seafile URL (e.g. https://seacloud.cc)",
+			Default: "",
+		}
+		conf.URL, err = urlPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+		userPrompt := promptui.Prompt{
+			Label:   "Username",
+			Default: "",
+		}
+		conf.Username, err = userPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+
+		passwordPrompt := promptui.Prompt{
+			Label:   "Password",
+			Default: "",
+			Mask:    '*',
+		}
+		conf.Password, err = passwordPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+
+		twoFactorPrompt := promptui.Prompt{
+			Label: "Is two factor auth enabled [y/N] ?",
+		}
+		twoFactorEnabled, err := twoFactorPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+		if strings.ToLower(twoFactorEnabled) == "y" {
+			conf.TwoFactorEnabled = true
+			otpPrompt := promptui.Prompt{
+				Label:   "OTP Token",
+				Default: "",
+			}
+			conf.OTP, err = otpPrompt.Run()
+			if err != nil {
+				fmt.Printf("Prompt failed %v\n", err)
+				return err
+			}
+		}
+
+		token, err := conf.GetToken()
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+		conf.CreateLibrary(token)
+		config.ProviderSettings["token"] = token
+		config.ProviderSettings["url"] = conf.URL
+		config.ProviderSettings["repoid"] = conf.RepoID
+
 	case "googledrive":
 		conf := googledrive.OAuth2GoogleDriveConfig()
 		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline))
@@ -157,6 +220,6 @@ func Setup(configfilepath string) error {
 		}
 		config.ProviderSettings["token"] = token.AccessToken
 	}
-
+	fmt.Println("write config...")
 	return config.Write()
 }
