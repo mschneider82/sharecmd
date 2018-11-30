@@ -9,7 +9,7 @@ Share your files with your friends using Cloudproviders with just one command.
 * Dropbox
 * Google Drive
 * Seafile (also private hosted)
-* Nextcloud
+* Nextcloud / Owncloud
 * Any missing? Create an Issue or PR!
 
 # Howto share?
