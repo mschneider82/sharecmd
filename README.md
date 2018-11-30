@@ -9,6 +9,7 @@ Share your files with your friends using Cloudproviders with just one command.
 * Dropbox
 * Google Drive
 * Seafile (also private hosted)
+* Nextcloud
 * Any missing? Create an Issue or PR!
 
 # Howto share?
@@ -16,7 +17,7 @@ Share your files with your friends using Cloudproviders with just one command.
 ```
 user@srv# share /etc/hosts
 Uploading 361 B/361 B
-2018/11/28 19:03:07 URL: https://drive.google.com/open?id=1C77TZBMT0PESUvsIPetGzrK36LqGFqza
+URL: https://drive.google.com/open?id=1C77TZBMT0PESUvsIPetGzrK36LqGFqza
 URL copied to clipboard!
 ```
 
