@@ -12,13 +12,14 @@ import (
 	"strings"
 
 	"github.com/manifoldco/promptui"
+	"github.com/mschneider82/nextcloud"
 	"github.com/mschneider82/sharecmd/provider/dropbox"
 	"github.com/mschneider82/sharecmd/provider/googledrive"
 	"github.com/mschneider82/sharecmd/provider/seafile"
 	"golang.org/x/oauth2"
 )
 
-var providers = []string{"dropbox", "googledrive", "seafile"}
+var providers = []string{"dropbox", "googledrive", "seafile", "nextcloud"}
 
 // Config File Structure
 type Config struct {
@@ -105,6 +106,40 @@ func Setup(configfilepath string) error {
 	fmt.Printf("You choose %q\n", provider)
 
 	switch provider {
+	case "nextcloud":
+		conf := nextcloud.Config{}
+		urlPrompt := promptui.Prompt{
+			Label:   "Nextcloud URL (e.g. https://example.com)",
+			Default: "",
+		}
+		conf.URL, err = urlPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+		userPrompt := promptui.Prompt{
+			Label:   "Username",
+			Default: "",
+		}
+		conf.Username, err = userPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+
+		passwordPrompt := promptui.Prompt{
+			Label:   "Password",
+			Default: "",
+			Mask:    '*',
+		}
+		conf.Password, err = passwordPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+		config.ProviderSettings["username"] = conf.Username
+		config.ProviderSettings["password"] = conf.Password
+		config.ProviderSettings["url"] = conf.URL
 	case "seafile":
 		conf := seafile.Config{}
 		urlPrompt := promptui.Prompt{
