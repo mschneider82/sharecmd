@@ -5,13 +5,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/mschneider82/sharecmd/provider/seafile"
-
 	"github.com/mschneider82/sharecmd/clipboard"
 	"github.com/mschneider82/sharecmd/config"
 	"github.com/mschneider82/sharecmd/provider"
 	"github.com/mschneider82/sharecmd/provider/dropbox"
 	"github.com/mschneider82/sharecmd/provider/googledrive"
+	"github.com/mschneider82/sharecmd/provider/seafile"
+	"go.uber.org/dig"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -23,12 +23,12 @@ var (
 
 // ShareCmd cli app
 type ShareCmd struct {
-	config   *config.Config
-	provider provider.Provider
+	config *config.Config
 }
 
 func main() {
 	kingpin.Parse()
+	c := dig.New()
 
 	if *setup {
 		config.Setup(*configFile)
@@ -44,25 +44,38 @@ func main() {
 
 		switch sharecmd.config.Provider {
 		case "seafile":
-			sharecmd.provider = seafile.NewProvider(sharecmd.config.ProviderSettings["url"], sharecmd.config.ProviderSettings["token"], sharecmd.config.ProviderSettings["repoid"])
+			err = c.Provide(func() provider.Provider {
+				return seafile.NewProvider(sharecmd.config.ProviderSettings["url"], sharecmd.config.ProviderSettings["token"], sharecmd.config.ProviderSettings["repoid"])
+			})
 		case "googledrive":
-			sharecmd.provider = googledrive.NewProvider(sharecmd.config.ProviderSettings["googletoken"])
+			err = c.Provide(func() provider.Provider {
+				return googledrive.NewProvider(sharecmd.config.ProviderSettings["googletoken"])
+			})
 		case "dropbox":
-			sharecmd.provider = dropbox.NewProvider(cfg.ProviderSettings["token"])
+			err = c.Provide(func() provider.Provider {
+				return dropbox.NewProvider(cfg.ProviderSettings["token"])
+			})
 		default:
 			config.Setup(*configFile)
 			os.Exit(0)
 		}
+		if err != nil {
+			log.Fatalf("%s", err.Error())
+		}
 
-		fileid, err := sharecmd.provider.Upload(*file, "")
-		if err != nil {
-			log.Fatalf("Can't upload file: %s", err.Error())
+		if err := c.Invoke(func(p provider.Provider) {
+			fileid, err := p.Upload(*file, "")
+			if err != nil {
+				log.Fatalf("Can't upload file: %s", err.Error())
+			}
+			link, err := p.GetLink(fileid)
+			if err != nil {
+				log.Fatalf("Can't get link for file: %s", err.Error())
+			}
+			fmt.Printf("URL: %s\n", link)
+			clipboard.ToClip(link)
+		}); err != nil {
+			log.Fatalf("%s", err.Error())
 		}
-		link, err := sharecmd.provider.GetLink(fileid)
-		if err != nil {
-			log.Fatalf("Can't get link for file: %s", err.Error())
-		}
-		fmt.Printf("URL: %s\n", link)
-		clipboard.ToClip(link)
 	}
 }
