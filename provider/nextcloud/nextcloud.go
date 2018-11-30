@@ -1,6 +1,7 @@
 package nextcloud
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/coreos/ioprogress"
-	"github.com/davecgh/go-spew/spew"
 	humanize "github.com/dustin/go-humanize"
 )
 
@@ -23,8 +23,8 @@ type Provider struct {
 	config Config
 }
 
-func NewProvider(c Config) (*Provider, error) {
-	return &Provider{}, nil
+func NewProvider(c Config) *Provider {
+	return &Provider{config: c}
 }
 
 func (s *Provider) Upload(file *os.File, path string) (string, error) {
@@ -46,19 +46,20 @@ func (s *Provider) Upload(file *os.File, path string) (string, error) {
 		Size: fileInfo.Size(),
 	}
 
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/remote.php/dav/sharecmd/%s", s.config.URL, filename), progressbar)
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/remote.php/webdav/sharecmd/%s", s.config.URL, filename), progressbar)
 	if err != nil {
 		return "", err
 	}
 	req.SetBasicAuth(s.config.Username, s.config.Password)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("OCS-APIRequest", "true")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	return "", nil
+	return filename, nil
 }
 
 func (s *Provider) GetLink(filename string) (string, error) {
@@ -69,6 +70,7 @@ func (s *Provider) GetLink(filename string) (string, error) {
 	}
 	req.SetBasicAuth(s.config.Username, s.config.Password)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("OCS-APIRequest", "true")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -76,25 +78,69 @@ func (s *Provider) GetLink(filename string) (string, error) {
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
-	return string(b), nil
+
+	var reply struct {
+		XMLName xml.Name `xml:"ocs"`
+		Text    string   `xml:",chardata"`
+		Meta    struct {
+			Text         string `xml:",chardata"`
+			Status       string `xml:"status"`
+			Statuscode   string `xml:"statuscode"`
+			Message      string `xml:"message"`
+			Totalitems   string `xml:"totalitems"`
+			Itemsperpage string `xml:"itemsperpage"`
+		} `xml:"meta"`
+		Data struct {
+			Text                 string `xml:",chardata"`
+			ID                   string `xml:"id"`
+			ShareType            string `xml:"share_type"`
+			UidOwner             string `xml:"uid_owner"`
+			DisplaynameOwner     string `xml:"displayname_owner"`
+			Permissions          string `xml:"permissions"`
+			Stime                string `xml:"stime"`
+			Parent               string `xml:"parent"`
+			Expiration           string `xml:"expiration"`
+			Token                string `xml:"token"`
+			UidFileOwner         string `xml:"uid_file_owner"`
+			Note                 string `xml:"note"`
+			DisplaynameFileOwner string `xml:"displayname_file_owner"`
+			Path                 string `xml:"path"`
+			ItemType             string `xml:"item_type"`
+			Mimetype             string `xml:"mimetype"`
+			StorageID            string `xml:"storage_id"`
+			Storage              string `xml:"storage"`
+			ItemSource           string `xml:"item_source"`
+			FileSource           string `xml:"file_source"`
+			FileParent           string `xml:"file_parent"`
+			FileTarget           string `xml:"file_target"`
+			ShareWith            string `xml:"share_with"`
+			ShareWithDisplayname string `xml:"share_with_displayname"`
+			URL                  string `xml:"url"`
+			MailSend             string `xml:"mail_send"`
+		} `xml:"data"`
+	}
+
+	err = xml.Unmarshal(b, &reply)
+
+	return reply.Data.URL, nil
 }
 
 func (s *Provider) createFolder(foldername string) error {
-	req, err := http.NewRequest("MKCOL", fmt.Sprintf("%s/nextcloud/remote.php/dav/files/%s/%s", s.config.URL, s.config.Username, foldername), nil)
+	url := fmt.Sprintf("%s/remote.php/dav/files/%s/%s", s.config.URL, s.config.Username, foldername)
+
+	req, err := http.NewRequest("MKCOL", url, nil)
 	if err != nil {
 		return err
 	}
+	h := make(map[string][]string)
+	h["OCS-APIRequest"] = []string{"true"}
+	req.Header = h
 	req.SetBasicAuth(s.config.Username, s.config.Password)
-
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	spew.Dump(resp.Body)
-}
 
-type Reply struct {
-	Exception string `xml:"exception"`
-	Message   string `xml:"message"`
+	return nil
 }

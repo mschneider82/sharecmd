@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"github.com/manifoldco/promptui"
-	"github.com/mschneider82/nextcloud"
 	"github.com/mschneider82/sharecmd/provider/dropbox"
 	"github.com/mschneider82/sharecmd/provider/googledrive"
+	"github.com/mschneider82/sharecmd/provider/nextcloud"
 	"github.com/mschneider82/sharecmd/provider/seafile"
 	"golang.org/x/oauth2"
 )

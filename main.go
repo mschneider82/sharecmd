@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/mschneider82/sharecmd/provider/nextcloud"
 	"github.com/mschneider82/sharecmd/provider/seafile"
 
 	"github.com/mschneider82/sharecmd/clipboard"
@@ -49,6 +50,12 @@ func main() {
 			sharecmd.provider = googledrive.NewProvider(sharecmd.config.ProviderSettings["googletoken"])
 		case "dropbox":
 			sharecmd.provider = dropbox.NewProvider(cfg.ProviderSettings["token"])
+		case "nextcloud":
+			sharecmd.provider = nextcloud.NewProvider(nextcloud.Config{
+				URL:      sharecmd.config.ProviderSettings["url"],
+				Username: sharecmd.config.ProviderSettings["username"],
+				Password: sharecmd.config.ProviderSettings["password"],
+			})
 		default:
 			config.Setup(*configFile)
 			os.Exit(0)
