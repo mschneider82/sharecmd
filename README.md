@@ -12,6 +12,10 @@ Share your files with your friends using Cloudproviders with just one command.
 * Nextcloud / Owncloud
 * Any missing? Create an Issue or PR!
 
+# Optional Support for URL Shortener Provider:
+
+* Biturl
+
 # Howto share?
 
 ```
@@ -54,6 +58,9 @@ It uploads all files to /sharecmd (folder auto generated)
 
 ## Seafile:
 It creates a new Library called sharecmd on setup
+
+## Own/Nextcloud:
+The folder /sharecmd will be auto generated.
 
 # Documentation:
 [![GoDoc](https://godoc.org/github.com/mschneider82/sharecmd?status.svg)](https://godoc.org/github.com/mschneider82/sharecmd)

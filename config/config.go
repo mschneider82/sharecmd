@@ -16,6 +16,7 @@ import (
 	"github.com/mschneider82/sharecmd/provider/googledrive"
 	"github.com/mschneider82/sharecmd/provider/nextcloud"
 	"github.com/mschneider82/sharecmd/provider/seafile"
+	"github.com/mschneider82/sharecmd/urlshortener"
 	"golang.org/x/oauth2"
 )
 
@@ -23,9 +24,11 @@ var providers = []string{"dropbox", "googledrive", "seafile", "nextcloud"}
 
 // Config File Structure
 type Config struct {
-	Provider         string            `json:"provider"`
-	ProviderSettings map[string]string `json:"providersettings"`
-	Path             string
+	Provider             string            `json:"provider"`
+	ProviderSettings     map[string]string `json:"providersettings"`
+	Path                 string
+	URLShortenerProvider string
+	URLShortenerSettings map[string]string
 }
 
 // UserHomeDir
@@ -255,6 +258,9 @@ func Setup(configfilepath string) error {
 		}
 		config.ProviderSettings["token"] = token.AccessToken
 	}
+	u, settings := urlshortener.Questions()
+	config.URLShortenerProvider = u
+	config.URLShortenerSettings = settings
 	fmt.Println("write config...")
 	return config.Write()
 }

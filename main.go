@@ -7,6 +7,8 @@ import (
 
 	"github.com/mschneider82/sharecmd/provider/nextcloud"
 	"github.com/mschneider82/sharecmd/provider/seafile"
+	"github.com/mschneider82/sharecmd/urlshortener"
+	"github.com/mschneider82/sharecmd/urlshortener/biturl"
 
 	"github.com/mschneider82/sharecmd/clipboard"
 	"github.com/mschneider82/sharecmd/config"
@@ -26,6 +28,7 @@ var (
 type ShareCmd struct {
 	config   *config.Config
 	provider provider.Provider
+	shorturl urlshortener.URLShortener
 }
 
 func main() {
@@ -70,6 +73,16 @@ func main() {
 			log.Fatalf("Can't get link for file: %s", err.Error())
 		}
 		fmt.Printf("URL: %s\n", link)
+		switch sharecmd.config.URLShortenerProvider {
+		case "biturl":
+			sharecmd.shorturl = biturl.New(link)
+			shorturl, err := sharecmd.shorturl.ShortURL()
+			if err == nil {
+				link = shorturl
+				fmt.Printf("Short URL: %s\n", link)
+			}
+		default:
+		}
 		clipboard.ToClip(link)
 	}
 }
