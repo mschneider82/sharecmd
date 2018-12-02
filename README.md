@@ -12,9 +12,10 @@ Share your files with your friends using Cloudproviders with just one command.
 * Nextcloud / Owncloud
 * Any missing? Create an Issue or PR!
 
-# Optional Support for URL Shortener Provider:
+# Optional Support for URL Shortener:
 
 * Biturl
+* ...
 
 # Howto share?
 
