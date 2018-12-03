@@ -58,12 +58,12 @@ snapcraft:
     copyed to system clipboard (windows/linux/macos)
     https://github.com/mschneider82/sharecmd
   grade: stable
-  confinement: strict
+  confinement: classic
   publish: true
   name: share
-  apps:
-    share:
-      plugs: ["home", "network"]
+  #apps:
+  #  share:
+  #    plugs: ["home", "network"]
 changelog:
   sort: asc
   filters:
