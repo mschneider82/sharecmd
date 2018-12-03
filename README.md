@@ -20,7 +20,7 @@ Share your files with your friends using Cloudproviders with just one command.
 # Howto share?
 
 ```
-user@srv# share /etc/hosts
+user@srv# share somedocument.pdf
 Uploading 361 B/361 B
 URL: https://drive.google.com/open?id=1C77TZBMT0PESUvsIPetGzrK36LqGFqza
 Short URL: https://biturl.top/67vE32
