@@ -63,7 +63,7 @@ snapcraft:
   name: share
   apps:
     share:
-      plugs: ["home"]
+      plugs: ["home", "network"]
 changelog:
   sort: asc
   filters:
