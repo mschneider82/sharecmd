@@ -14,7 +14,7 @@ Share your files with your friends using Cloudproviders with just one command.
 
 # Optional Support for URL Shortener:
 
-* Biturl
+* Biturl.top
 * ...
 
 # Howto share?
