@@ -24,6 +24,32 @@ type Provider struct {
 	token  *oauth2.Token
 }
 
+var mimeExtentions = map[string]string{
+	".epub":  "application/epub+zip",
+	".json":  "application/json",
+	".doc":   "application/msword",
+	".pdf":   "application/pdf",
+	".rtf":   "application/rtf",
+	".xls":   "application/vnd.ms-excel",
+	".odp":   "application/vnd.oasis.opendocument.presentation",
+	".ods":   "application/vnd.oasis.opendocument.spreadsheet",
+	".odt":   "application/vnd.oasis.opendocument.text",
+	".pptx":  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	".xlsx":  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	".docx":  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	".wmf":   "application/x-msmetafile",
+	".zip":   "application/zip",
+	".bmp":   "image/bmp",
+	".jpg":   "image/jpeg",
+	".pjpeg": "image/pjpeg",
+	".png":   "image/png",
+	".svg":   "image/svg+xml",
+	".csv":   "text/csv",
+	".html":  "text/html",
+	".txt":   "text/plain",
+	".tsv":   "text/tab-separated-values",
+}
+
 // OAuth2GoogleDriveConfig ...
 func OAuth2GoogleDriveConfig() *oauth2.Config {
 	b := []byte(`{"installed":{"client_id":"26115953275-7971erj532s8d98vlso25467iudikbvf.apps.googleusercontent.com","project_id":"sharecmd-223413","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://www.googleapis.com/oauth2/v3/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"JblUhzPxWD-9zvJ7XBPr2Du8","redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]}}`)
@@ -74,9 +100,15 @@ func (c *Provider) Upload(file *os.File, path string) (fileID string, err error)
 	}
 	parendID := getOrCreateFolder(srv, "sharecmd")
 
+	filename := filepath.Base(file.Name())
+	fileext := filepath.Ext(filename)
+
 	f := &drive.File{
 		Name:    filepath.Base(file.Name()),
 		Parents: []string{parendID},
+	}
+	if mimeExtentions[fileext] != "" {
+		f.MimeType = mimeExtentions[fileext]
 	}
 	r, err := srv.Files.Create(f).Media(progressbar).Do()
 	if err != nil {
