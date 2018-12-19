@@ -1,9 +1,9 @@
 class Sharecmd < Formula
   desc "Share your files using Cloudproviders with just one command"
   homepage "https://github.com/mschneider82/sharecmd"
-  url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.60/sharecmd_0.0.60_Darwin_x86_64.tar.gz"
-  version "0.0.60"
-  sha256 "f672c527d04c5cfe3059ad3b8cebdb1cbe0ab3e55a6d9c7cd258289d708661c9"
+  url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.65/sharecmd_0.0.65_Darwin_x86_64.tar.gz"
+  version "0.0.65"
+  sha256 "3aee07f8868922932d918ad72a5a1fd24fde745b96524f077082c9aa53817dce"
 
   def install
     bin.install "share"
