@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/mschneider82/sharecmd)](https://goreportcard.com/report/github.com/mschneider82/sharecmd)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mschneider82/sharecmd)](https://goreportcard.com/report/github.com/mschneider82/sharecmd) [![GoDoc](https://godoc.org/github.com/mschneider82/sharecmd?status.svg)](https://godoc.org/github.com/mschneider82/sharecmd)
 
 ![gopher](gopher.png)
 
@@ -65,6 +65,3 @@ It creates a new Library called sharecmd on setup
 
 ## Own/Nextcloud:
 The folder /sharecmd will be auto generated.
-
-# Documentation:
-[![GoDoc](https://godoc.org/github.com/mschneider82/sharecmd?status.svg)](https://godoc.org/github.com/mschneider82/sharecmd)
