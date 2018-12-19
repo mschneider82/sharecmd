@@ -104,7 +104,7 @@ func (c *Provider) Upload(file *os.File, path string) (fileID string, err error)
 	fileext := filepath.Ext(filename)
 
 	f := &drive.File{
-		Name:    filepath.Base(file.Name()),
+		Name:    filename,
 		Parents: []string{parendID},
 	}
 	if mimeExtentions[fileext] != "" {
