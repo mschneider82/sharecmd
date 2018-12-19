@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/mschneider82/sharecmd)](https://goreportcard.com/report/github.com/mschneider82/sharecmd)
+
 ![gopher](gopher.png)
 
 # Go Share files!
