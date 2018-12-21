@@ -64,10 +64,6 @@ snapcraft:
   apps:
     share:
       plugs: ["home", "network", "x11"]
-  parts:
-    share:
-      stage-packages:
-        - xsel
 changelog:
   sort: asc
   filters:
