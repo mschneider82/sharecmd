@@ -22,6 +22,7 @@ var (
 	configFile = kingpin.Flag("config", "Client configuration file").Default(config.UserHomeDir() + "/.config/sharecmd/config.json").String()
 	setup      = kingpin.Flag("setup", "Setup client configuration").Bool()
 	file       = kingpin.Arg("file", "filename to upload").File()
+	version    = kingpin.Arg("version", "print version and exit").Bool()
 )
 
 // ShareCmd cli app
@@ -33,6 +34,11 @@ type ShareCmd struct {
 
 func main() {
 	kingpin.Parse()
+
+	if *version {
+		fmt.Println("Version 0.0.71")
+		os.Exit(0)
+	}
 
 	if *setup {
 		config.Setup(*configFile)
