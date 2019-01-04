@@ -5,3 +5,5 @@ git push origin v0.0.$count
 . ./.token
 
 goreleaser --rm-dist
+
+curl -XPOST -umschneider82:$PUT_NAME_SECRET https://api.bintray.com/content/mschneider82/share/share/v0.0.$count/publish

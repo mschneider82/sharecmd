@@ -65,6 +65,10 @@ snapcraft:
   apps:
     share:
       plugs: ["home", "network", "x11"]
+puts:
+  - name: bintray
+    target: https://api.bintray.com/content/mschneider82/share/share/{{ .Version }}/
+    username: mschneider82
 changelog:
   sort: asc
   filters:
