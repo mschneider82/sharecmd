@@ -67,6 +67,7 @@ snapcraft:
       plugs: ["home", "network", "x11"]
 puts:
   - name: bintray
+    mode: binary
     target: https://api.bintray.com/content/mschneider82/share/share/{{ .Version }}/
     username: mschneider82
 changelog:
