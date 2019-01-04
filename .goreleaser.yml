@@ -59,7 +59,8 @@ snapcraft:
     https://github.com/mschneider82/sharecmd
   grade: stable
   confinement: strict
-  publish: true
+  publish: false
+  #true
   name: share
   apps:
     share:
