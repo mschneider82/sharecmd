@@ -68,7 +68,7 @@ snapcraft:
 puts:
   - name: bintray
     mode: archive
-    target: https://api.bintray.com/content/mschneider82/share/share/{{ .Version }}/
+    target: https://api.bintray.com/content/mschneider82/generic/share/{{ .Version }}/
     username: mschneider82
 changelog:
   sort: asc
