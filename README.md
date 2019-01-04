@@ -41,6 +41,12 @@ Select a provider and connect the app to your account. The token will be saved t
 [Download precompiled binarys](https://github.com/mschneider82/sharecmd/releases) for your OS
 or compile it from source.
 
+On Linux you can use this curl command to always get the latest version:
+
+```
+curl -sfL https://install.goreleaser.com/github.com/mschneider82/sharecmd.sh | sh
+```
+
 On MacOSX you can use brew
 
 ```
