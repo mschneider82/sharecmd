@@ -121,7 +121,12 @@ func (s *Provider) GetLink(filename string) (string, error) {
 	}
 
 	err = xml.Unmarshal(b, &reply)
-
+	if err != nil {
+		return "", err
+	}
+	if reply.Data.URL == "" {
+		return "", fmt.Errorf("Status: %s, Message: %s ", reply.Meta.Status, reply.Meta.Message)
+	}
 	return reply.Data.URL, nil
 }
 
