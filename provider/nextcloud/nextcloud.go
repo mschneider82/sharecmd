@@ -78,6 +78,9 @@ func (s *Provider) GetLink(filename string) (string, error) {
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
 
 	var reply struct {
 		XMLName xml.Name `xml:"ocs"`
