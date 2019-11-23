@@ -10,7 +10,7 @@ require (
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
 	github.com/dropbox/dropbox-sdk-go-unofficial v5.4.0+incompatible
 	github.com/dustin/go-humanize v1.0.0
-	github.com/manifoldco/promptui v0.3.2
+	github.com/manifoldco/promptui v0.3.3-0.20190709121057-748542ed5f25
 	github.com/mschneider82/easygo v0.0.0-20180731142950-f2a24982ceed
 	github.com/mschneider82/sharecmd v0.0.96
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
@@ -20,5 +20,3 @@ require (
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20191105091915-95d230a53780 // indirect
 )
-
-exclude gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20180810215634-df19058c872c
