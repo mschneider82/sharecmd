@@ -1,6 +1,10 @@
 package dropbox
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,8 +26,7 @@ import (
 const chunkSize int64 = 1 << 24
 
 var (
-	personalAppKey    = "40em1t168bc5aay"
-	personalAppSecret = "mi55rqbz0rgb16f"
+	ob = "ufsdii23n452u32iXXi8231aso0i1"
 )
 
 // TokenMap example: { "token": "xxx" }
@@ -31,9 +34,10 @@ type TokenMap map[string]string
 
 // OAuth2DropboxConfig creates a oauth config
 func OAuth2DropboxConfig() *oauth2.Config {
+	o := obf{jkoq: []byte(ob)}
 	return &oauth2.Config{
-		ClientID:     personalAppKey,
-		ClientSecret: personalAppSecret,
+		ClientID:     o.de("cJ21xYBoKXFzTY3vu1A3Hda4dp57jYMrTs1dbmdf9g=="),
+		ClientSecret: o.de("Ziif+YX0+cnsKuO8P9ZBXhQwjs/IL/MwmdUnTbnZiQ=="),
 		Endpoint:     dropbox.OAuthEndpoint(".dropboxapi.com"),
 	}
 }
@@ -180,4 +184,43 @@ func uploadChunked(dbx files.Client, r io.Reader, commitInfo *files.CommitInfo, 
 	}
 
 	return
+}
+
+type obf struct {
+	jkoq []byte
+}
+
+func (b *obf) en(plain string) string {
+	text := []byte(plain)
+	block, err := aes.NewCipher(b.jkoq)
+	if err != nil {
+		panic(err)
+	}
+	ciphertext := make([]byte, aes.BlockSize+len(text))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+	cfb := cipher.NewCFBEncrypter(block, iv)
+	cfb.XORKeyStream(ciphertext[aes.BlockSize:], text)
+	return base64.StdEncoding.EncodeToString(ciphertext)
+}
+
+func (b *obf) de(b64 string) string {
+	text, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		panic(err)
+	}
+	block, err := aes.NewCipher(b.jkoq)
+	if err != nil {
+		panic(err)
+	}
+	if len(text) < aes.BlockSize {
+		panic("ciphertext too short")
+	}
+	iv := text[:aes.BlockSize]
+	text = text[aes.BlockSize:]
+	cfb := cipher.NewCFBDecrypter(block, iv)
+	cfb.XORKeyStream(text, text)
+	return string(text)
 }

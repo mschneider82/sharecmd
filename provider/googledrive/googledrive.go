@@ -2,8 +2,13 @@ package googledrive
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -49,10 +54,16 @@ var mimeExtentions = map[string]string{
 	".txt":   "text/plain",
 	".tsv":   "text/tab-separated-values",
 }
+var (
+	ob = "ufsdii23n452u32iXXi8231aso0i1"
+	y  = "MmciVUipVqmm4Chej+dVMxwUumsQDTq3G6Qkv7lhR366CaVac3eD1w=="
+)
 
 // OAuth2GoogleDriveConfig ...
 func OAuth2GoogleDriveConfig() *oauth2.Config {
-	b := []byte(`{"installed":{"client_id":"26115953275-7971erj532s8d98vlso25467iudikbvf.apps.googleusercontent.com","project_id":"sharecmd-223413","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://www.googleapis.com/oauth2/v3/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"JblUhzPxWD-9zvJ7XBPr2Du8","redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]}}`)
+	k := obf{jkoq: []byte(ob)}
+	x := k.de(y)
+	b := []byte(`{"installed":{"client_id":"26115953275-7971erj532s8d98vlso25467iudikbvf.apps.googleusercontent.com","project_id":"sharecmd-223413","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://www.googleapis.com/oauth2/v3/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"` + x + `","redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]}}`)
 	//config, err := google.ConfigFromJSON(b, drive.DriveMetadataScope)
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
@@ -169,4 +180,43 @@ func getOrCreateFolder(d *drive.Service, folderName string) string {
 		folderID = r.Id
 	}
 	return folderID
+}
+
+type obf struct {
+	jkoq []byte
+}
+
+func (b *obf) en(plain string) string {
+	text := []byte(plain)
+	block, err := aes.NewCipher(b.jkoq)
+	if err != nil {
+		panic(err)
+	}
+	ciphertext := make([]byte, aes.BlockSize+len(text))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+	cfb := cipher.NewCFBEncrypter(block, iv)
+	cfb.XORKeyStream(ciphertext[aes.BlockSize:], text)
+	return base64.StdEncoding.EncodeToString(ciphertext)
+}
+
+func (b *obf) de(b64 string) string {
+	text, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		panic(err)
+	}
+	block, err := aes.NewCipher(b.jkoq)
+	if err != nil {
+		panic(err)
+	}
+	if len(text) < aes.BlockSize {
+		panic("ciphertext too short")
+	}
+	iv := text[:aes.BlockSize]
+	text = text[aes.BlockSize:]
+	cfb := cipher.NewCFBDecrypter(block, iv)
+	cfb.XORKeyStream(text, text)
+	return string(text)
 }
