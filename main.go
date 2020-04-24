@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
+	"github.com/mdp/qrterminal"
 	"github.com/mschneider82/sharecmd/provider/nextcloud"
 	"github.com/mschneider82/sharecmd/provider/seafile"
 	"github.com/mschneider82/sharecmd/urlshortener"
@@ -79,6 +81,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("Can't get link for file: %s", err.Error())
 		}
+		var qr strings.Builder
+		qrterminal.Generate(link, qrterminal.L, &qr)
+		fmt.Printf("\n%s\n", qr.String())
 		fmt.Printf("URL: %s\n", link)
 		switch sharecmd.config.URLShortenerProvider {
 		case "biturl":
