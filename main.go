@@ -7,17 +7,17 @@ import (
 	"strings"
 
 	"github.com/mdp/qrterminal"
-	"github.com/mschneider82/sharecmd/provider/nextcloud"
-	"github.com/mschneider82/sharecmd/provider/seafile"
-	"github.com/mschneider82/sharecmd/urlshortener"
-	"github.com/mschneider82/sharecmd/urlshortener/biturl"
-
-	"github.com/mschneider82/sharecmd/clipboard"
-	"github.com/mschneider82/sharecmd/config"
-	"github.com/mschneider82/sharecmd/provider"
-	"github.com/mschneider82/sharecmd/provider/dropbox"
-	"github.com/mschneider82/sharecmd/provider/googledrive"
+	"github.com/spf13/cast"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"schneider.vip/share/clipboard"
+	"schneider.vip/share/config"
+	"schneider.vip/share/provider"
+	"schneider.vip/share/provider/dropbox"
+	"schneider.vip/share/provider/googledrive"
+	"schneider.vip/share/provider/nextcloud"
+	"schneider.vip/share/provider/seafile"
+	"schneider.vip/share/urlshortener"
+	"schneider.vip/share/urlshortener/biturl"
 )
 
 var (
@@ -64,9 +64,11 @@ func main() {
 			sharecmd.provider = dropbox.NewProvider(cfg.ProviderSettings["token"])
 		case "nextcloud":
 			sharecmd.provider = nextcloud.NewProvider(nextcloud.Config{
-				URL:      sharecmd.config.ProviderSettings["url"],
-				Username: sharecmd.config.ProviderSettings["username"],
-				Password: sharecmd.config.ProviderSettings["password"],
+				URL:                   sharecmd.config.ProviderSettings["url"],
+				Username:              sharecmd.config.ProviderSettings["username"],
+				Password:              sharecmd.config.ProviderSettings["password"],
+				LinkShareWithPassword: cast.ToBool(sharecmd.config.ProviderSettings["linkShareWithPassword"]),
+				RandomPasswordChars:   cast.ToInt(sharecmd.config.ProviderSettings["randomPasswordChars"]),
 			})
 		default:
 			config.Setup(*configFile)

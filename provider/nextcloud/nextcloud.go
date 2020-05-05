@@ -5,18 +5,22 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/coreos/ioprogress"
 	humanize "github.com/dustin/go-humanize"
+	"github.com/sethvargo/go-password/password"
 )
 
 type Config struct {
-	URL      string
-	Username string
-	Password string
+	URL                   string
+	Username              string
+	Password              string
+	LinkShareWithPassword bool
+	RandomPasswordChars   int
 }
 
 type Provider struct {
@@ -62,8 +66,33 @@ func (s *Provider) Upload(file *os.File, path string) (string, error) {
 	return filename, nil
 }
 
-func (s *Provider) GetLink(filename string) (string, error) {
-	body := strings.NewReader(fmt.Sprintf(`path=sharecmd/%s&shareType=3&permissions=1`, filename))
+func (s *Provider) GetLink(filename string) (r string, err error) {
+	if s.config.LinkShareWithPassword {
+		randompw, pwerr := password.Generate(s.config.RandomPasswordChars, 1, 1, false, false)
+		if pwerr != nil {
+			return "", err
+		}
+		r, err = s.getLink(filename, randompw)
+		if err == nil {
+			fmt.Println("=======================================")
+			fmt.Printf("Password generated: %s\n", randompw)
+			fmt.Println("=======================================")
+		}
+	} else {
+		r, err = s.getLink(filename, "")
+	}
+
+	return
+}
+
+func (s *Provider) getLink(filename string, pass string) (string, error) {
+	var body *strings.Reader
+	if pass == "" {
+		body = strings.NewReader(fmt.Sprintf(`path=sharecmd/%s&shareType=3&permissions=1`, filename))
+	} else {
+		body = strings.NewReader(fmt.Sprintf(`path=sharecmd/%s&shareType=3&permissions=1&password=%s`, filename, url.QueryEscape(pass)))
+	}
+
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/ocs/v1.php/apps/files_sharing/api/v1/shares", s.config.URL), body)
 	if err != nil {
 		return "", err
@@ -128,7 +157,7 @@ func (s *Provider) GetLink(filename string) (string, error) {
 		return "", err
 	}
 	if reply.Data.URL == "" {
-		return "", fmt.Errorf("Status: %s, Message: %s ", reply.Meta.Status, reply.Meta.Message)
+		return "", fmt.Errorf("Status: %s, Message: %s", reply.Meta.Status, reply.Meta.Message)
 	}
 	return reply.Data.URL, nil
 }

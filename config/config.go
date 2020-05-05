@@ -12,12 +12,13 @@ import (
 	"strings"
 
 	"github.com/manifoldco/promptui"
-	"github.com/mschneider82/sharecmd/provider/dropbox"
-	"github.com/mschneider82/sharecmd/provider/googledrive"
-	"github.com/mschneider82/sharecmd/provider/nextcloud"
-	"github.com/mschneider82/sharecmd/provider/seafile"
-	"github.com/mschneider82/sharecmd/urlshortener"
+	"github.com/spf13/cast"
 	"golang.org/x/oauth2"
+	"schneider.vip/share/provider/dropbox"
+	"schneider.vip/share/provider/googledrive"
+	"schneider.vip/share/provider/nextcloud"
+	"schneider.vip/share/provider/seafile"
+	"schneider.vip/share/urlshortener"
 )
 
 var providers = []string{"dropbox", "googledrive", "seafile", "nextcloud"}
@@ -111,38 +112,67 @@ func Setup(configfilepath string) error {
 	switch provider {
 	case "nextcloud":
 		conf := nextcloud.Config{}
-		urlPrompt := promptui.Prompt{
+		p := promptui.Prompt{
 			Label:   "Nextcloud URL (e.g. https://example.com)",
 			Default: "",
 		}
-		conf.URL, err = urlPrompt.Run()
+		conf.URL, err = p.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed %v\n", err)
 			return err
 		}
-		userPrompt := promptui.Prompt{
+		p = promptui.Prompt{
 			Label:   "Username",
 			Default: "",
 		}
-		conf.Username, err = userPrompt.Run()
+		conf.Username, err = p.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed %v\n", err)
 			return err
 		}
 
-		passwordPrompt := promptui.Prompt{
+		p = promptui.Prompt{
 			Label:   "Password",
 			Default: "",
 			Mask:    '*',
 		}
-		conf.Password, err = passwordPrompt.Run()
+		conf.Password, err = p.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed %v\n", err)
 			return err
 		}
+
+		p = promptui.Prompt{
+			Label:   "Use Password protected link Shares [y/N] ",
+			Default: "N",
+		}
+		linkShareWithPassword, err := p.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+
+		usePass := strings.ToLower(linkShareWithPassword) == "y" || strings.ToLower(linkShareWithPassword) == "yes"
+
+		randomPwChars := "32"
+		if usePass {
+			p = promptui.Prompt{
+				Label:   "How many Random Password Chars",
+				Default: "32",
+			}
+			randomPwChars, err = p.Run()
+			if err != nil {
+				fmt.Printf("Prompt failed %v\n", err)
+				return err
+			}
+		}
+
 		config.ProviderSettings["username"] = conf.Username
 		config.ProviderSettings["password"] = conf.Password
 		config.ProviderSettings["url"] = conf.URL
+		config.ProviderSettings["linkShareWithPassword"] = cast.ToString(usePass)
+		config.ProviderSettings["randomPasswordChars"] = cast.ToString(randomPwChars)
+
 	case "seafile":
 		conf := seafile.Config{}
 		urlPrompt := promptui.Prompt{

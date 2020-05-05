@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/manifoldco/promptui"
-	"github.com/mschneider82/sharecmd/urlshortener/biturl"
+	"schneider.vip/share/urlshortener/biturl"
 )
 
 // URLShortener Interface
