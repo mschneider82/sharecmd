@@ -30,7 +30,7 @@ func (b *BitURL) GetName() string {
 
 // ShortURL maks http post to biturl.top to get short url
 func (b *BitURL) ShortURL() (string, error) {
-	resp, err := http.Post(fmt.Sprintf("https://biturl.top/short?url=%s", b.URL), "", nil)
+	resp, err := http.Post(fmt.Sprintf("https://api.biturl.top/short?url=%s", b.URL), "", nil)
 	if err != nil {
 		return "", err
 	}
