@@ -52,23 +52,23 @@ nfpms:
     - rpm
 checksum:
   name_template: 'checksums.txt'
-snapcrafts:
-  -
-    name_template: 'share_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    summary: Share your files using Cloudproviders with just one command
-    description: |
-      Share uploads the file to the configured cloud provider and does a 
-      public share of the file for anyone who has the link. The link will be 
-      copyed to system clipboard (windows/linux/macos)
-      https://github.com/mschneider82/sharecmd
-    grade: stable
-    confinement: strict
-    publish: false
-    #true
-    name: share
-    apps:
-      share:
-        plugs: ["home", "network", "x11"]
+#snapcrafts:
+#  -
+#    name_template: 'share_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+#    summary: Share your files using Cloudproviders with just one command
+#    description: |
+#      Share uploads the file to the configured cloud provider and does a 
+#      public share of the file for anyone who has the link. The link will be 
+#      copyed to system clipboard (windows/linux/macos)
+#      https://github.com/mschneider82/sharecmd
+#    grade: stable
+#    confinement: strict
+#    publish: false
+#    #true
+#    name: share
+#    apps:
+#      share:
+#        plugs: ["home", "network", "x11"]
 changelog:
   sort: asc
   filters:
