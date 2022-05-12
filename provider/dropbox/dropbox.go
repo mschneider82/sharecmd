@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -34,7 +35,10 @@ type TokenMap map[string]string
 
 // OAuth2DropboxConfig creates a oauth config
 func OAuth2DropboxConfig() *oauth2.Config {
-	o := obf{jkoq: []byte(ob)}
+	hasher := sha1.New()
+	hasher.Write([]byte(ob))
+	ab := hasher.Sum(nil)[:16]
+	o := obf{jkoq: []byte(ab)}
 	return &oauth2.Config{
 		ClientID:     o.de("cJ21xYBoKXFzTY3vu1A3Hda4dp57jYMrTs1dbmdf9g=="),
 		ClientSecret: o.de("Ziif+YX0+cnsKuO8P9ZBXhQwjs/IL/MwmdUnTbnZiQ=="),
