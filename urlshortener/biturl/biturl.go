@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // BitURL Shortener Interface impl
@@ -30,7 +31,12 @@ func (b *BitURL) GetName() string {
 
 // ShortURL maks http post to biturl.top to get short url
 func (b *BitURL) ShortURL() (string, error) {
-	resp, err := http.Post(fmt.Sprintf("https://api.biturl.top/short?url=%s", b.URL), "", nil)
+	body := `-----------------------------4139599310243699752647233313
+Content-Disposition: form-data; name="url"
+
+` + b.URL + `
+-----------------------------4139599310243699752647233313--`
+	resp, err := http.Post("https://api.biturl.top/short", "multipart/form-data; boundary=---------------------------4139599310243699752647233313", strings.NewReader(body))
 	if err != nil {
 		return "", err
 	}
@@ -38,7 +44,6 @@ func (b *BitURL) ShortURL() (string, error) {
 	resultBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("result body error: %s, expecting json got: %s", err.Error(), string(resultBody))
-
 	}
 	// {"result":true,"short":"https://biturl.top/EbQjye","message":""}
 	var reply struct {
