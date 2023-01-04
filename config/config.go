@@ -21,7 +21,7 @@ import (
 	"schneider.vip/share/urlshortener"
 )
 
-var providers = []string{"dropbox", "googledrive", "seafile", "nextcloud"}
+var providers = []string{"dropbox", "opendrive", "seafile", "nextcloud"}
 
 // Config File Structure
 type Config struct {
@@ -45,7 +45,7 @@ func UserHomeDir() string {
 
 // Write config to disk
 func (c Config) Write() error {
-	err := os.MkdirAll(path.Dir(UserHomeDir()+"/.config/sharecmd/config.json"), 0700)
+	err := os.MkdirAll(path.Dir(UserHomeDir()+"/.config/sharecmd/config.json"), 0o700)
 	if err != nil {
 		return err
 	}
@@ -287,6 +287,30 @@ func Setup(configfilepath string) error {
 			return err
 		}
 		config.ProviderSettings["token"] = token.AccessToken
+	case "opendrive":
+		var user, password string
+		userPrompt := promptui.Prompt{
+			Label:   "Username",
+			Default: "",
+		}
+		user, err = userPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+
+		passwordPrompt := promptui.Prompt{
+			Label:   "Password",
+			Default: "",
+			Mask:    '*',
+		}
+		password, err = passwordPrompt.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return err
+		}
+		config.ProviderSettings["user"] = user
+		config.ProviderSettings["pass"] = password
 	}
 	u, settings := urlshortener.Questions()
 	config.URLShortenerProvider = u

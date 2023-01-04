@@ -20,9 +20,10 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	drive "google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
-//https://developers.google.com/drive/api/v3/quickstart/go
+// https://developers.google.com/drive/api/v3/quickstart/go
 
 // Provider implements a provider
 type Provider struct {
@@ -55,6 +56,7 @@ var mimeExtentions = map[string]string{
 	".txt":   "text/plain",
 	".tsv":   "text/tab-separated-values",
 }
+
 var (
 	ob = "ufsdii23n452u32iXXi8231aso0i1"
 	y  = "MmciVUipVqmm4Chej+dVMxwUumsQDTq3G6Qkv7lhR366CaVac3eD1w=="
@@ -68,7 +70,7 @@ func OAuth2GoogleDriveConfig() *oauth2.Config {
 	k := obf{jkoq: []byte(ab)}
 	x := k.de(y)
 	b := []byte(`{"installed":{"client_id":"26115953275-7971erj532s8d98vlso25467iudikbvf.apps.googleusercontent.com","project_id":"sharecmd-223413","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://www.googleapis.com/oauth2/v3/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"` + x + `","redirect_uris":["urn:ietf:wg:oauth:2.0:oob","http://localhost"]}}`)
-	//config, err := google.ConfigFromJSON(b, drive.DriveMetadataScope)
+	// config, err := google.ConfigFromJSON(b, drive.DriveMetadataScope)
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
@@ -93,14 +95,13 @@ func (c *Provider) getClient() *http.Client {
 
 // Upload the file
 func (c *Provider) Upload(file *os.File, path string) (fileID string, err error) {
-
 	fileInfo, err := file.Stat()
 	if err != nil {
 		return "", err
 	}
 
 	client := c.getClient()
-	srv, err := drive.New(client)
+	srv, err := drive.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}

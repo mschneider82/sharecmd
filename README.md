@@ -9,7 +9,8 @@ Share your files with your friends using Cloudproviders with just one command.
 # Supported Cloud Providers:
 
 * Dropbox
-* Google Drive
+* Google Drive (currently not working)
+* OpenDrive
 * Seafile (also private hosted)
 * Nextcloud / Owncloud
 * Any missing? Create an Issue or PR!
@@ -64,6 +65,9 @@ clipboard (windows/linux/macos)
 It uploads all files to /Apps/sharecmd (folder auto generated)
 
 ## Googledrive:
+It uploads all files to /sharecmd (folder auto generated)
+
+## Opendrive
 It uploads all files to /sharecmd (folder auto generated)
 
 ## Seafile:

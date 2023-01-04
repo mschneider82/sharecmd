@@ -13,8 +13,8 @@ import (
 	"schneider.vip/share/config"
 	"schneider.vip/share/provider"
 	"schneider.vip/share/provider/dropbox"
-	"schneider.vip/share/provider/googledrive"
 	"schneider.vip/share/provider/nextcloud"
+	"schneider.vip/share/provider/opendrive"
 	"schneider.vip/share/provider/seafile"
 	"schneider.vip/share/urlshortener"
 	"schneider.vip/share/urlshortener/biturl"
@@ -58,8 +58,9 @@ func main() {
 		switch sharecmd.config.Provider {
 		case "seafile":
 			sharecmd.provider = seafile.NewProvider(sharecmd.config.ProviderSettings["url"], sharecmd.config.ProviderSettings["token"], sharecmd.config.ProviderSettings["repoid"])
-		case "googledrive":
-			sharecmd.provider = googledrive.NewProvider(sharecmd.config.ProviderSettings["googletoken"])
+		case "opendrive":
+			sharecmd.provider = opendrive.NewProvider(sharecmd.config.ProviderSettings["user"],
+				sharecmd.config.ProviderSettings["pass"])
 		case "dropbox":
 			sharecmd.provider = dropbox.NewProvider(cfg.ProviderSettings["token"])
 		case "nextcloud":
