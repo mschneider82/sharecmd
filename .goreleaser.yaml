@@ -1,0 +1,72 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        format: zip
+nfpms:
+  - file_name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    homepage: https://github.com/mschneider82/sharecmd
+    description: Share your files with your friends using Cloudproviders with just one command.
+    maintainer: Matthias Schneider <ms@wck.biz>
+    license: Apache
+    formats:
+      - deb
+      - rpm
+
+snapcrafts:
+  - name_template: 'share_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    summary: Share your files using Cloudproviders with just one command
+    description: |
+      Share uploads the file to the configured cloud provider and does a
+      public share of the file for anyone who has the link. The link will be
+      copyed to system clipboard (windows/linux/macos)
+      https://github.com/mschneider82/sharecmd
+    grade: stable
+    confinement: strict
+    publish: true
+    #true
+    name: share
+    apps:
+      share:
+        plugs: ["home", "network", "x11"]
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
