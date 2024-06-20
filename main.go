@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/mdp/qrterminal"
 	"github.com/spf13/cast"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"schneider.vip/share/clipboard"
 	"schneider.vip/share/config"
 	"schneider.vip/share/provider"
