@@ -49,6 +49,10 @@ func (o *Provider) getSessionID() (string, error) {
 		return "", fmt.Errorf("json unmarshal error: %s", err.Error())
 	}
 
+	if response.SessionID == "" {
+		return "", fmt.Errorf("session id is empty: %s", string(resultBody))
+	}
+
 	return response.SessionID, nil
 }
 
