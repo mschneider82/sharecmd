@@ -13,14 +13,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Snapcraft
+        run: sudo snap install snapcraft --classic
+
+      - name: Install LXD
+        run: |
+          sudo snap install lxd
+          sudo lxd init --auto
+          sudo usermod -aG lxd $USER
+
       - name: Build snap
-        uses: snapcore/action-build@v1
-        id: build
+        run: sg lxd -c 'snapcraft --use-lxd'
+        env:
+          SNAPCRAFT_BUILD_INFO: 1
+
+      - name: Get snap file
+        id: snap
+        run: echo "snap=$(ls *.snap)" >> $GITHUB_OUTPUT
 
       - name: Publish to Snap Store
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
-          snap: ${{ steps.build.outputs.snap }}
+          snap: ${{ steps.snap.outputs.snap }}
           release: stable
