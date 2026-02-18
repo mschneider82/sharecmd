@@ -44,7 +44,9 @@ func main() {
 	}
 
 	if *setup {
-		config.Setup(*configFile)
+		if err := config.Setup(*configFile); err != nil {
+			log.Fatalf("Setup failed: %v\n", err)
+		}
 		os.Exit(0)
 	}
 	if file != nil {

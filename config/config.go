@@ -266,13 +266,13 @@ func Setup(configfilepath string) error {
 
 	case "dropbox":
 		conf := dropbox.OAuth2DropboxConfig()
-		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state"))
+		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state", oauth2.SetAuthURLParam("token_access_type", "offline")))
 		fmt.Printf("2. Click \"Allow\" (you might have to log in first).\n")
 		fmt.Printf("3. Copy the authorization code.\n")
 
 		authorizationprompt := promptui.Prompt{
 			Label:   "Authorization Code",
-			Default: config.ProviderSettings["token"],
+			Default: "",
 		}
 		authcode, err := authorizationprompt.Run()
 		if err != nil {
@@ -286,7 +286,11 @@ func Setup(configfilepath string) error {
 		if err != nil {
 			return err
 		}
-		config.ProviderSettings["token"] = token.AccessToken
+		tokenB, err := json.Marshal(token)
+		if err != nil {
+			return err
+		}
+		config.ProviderSettings["token"] = string(tokenB)
 	case "opendrive":
 		var user, password string
 		userPrompt := promptui.Prompt{

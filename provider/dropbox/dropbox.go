@@ -1,6 +1,7 @@
 package dropbox
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -14,9 +15,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox"
-	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/files"
-	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/sharing"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/files"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/sharing"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/oauth2"
 
@@ -39,10 +40,11 @@ func OAuth2DropboxConfig() *oauth2.Config {
 	hasher.Write([]byte(ob))
 	ab := hasher.Sum(nil)[:16]
 	o := obf{jkoq: []byte(ab)}
+	endpoint := dropbox.OAuthEndpoint("")
 	return &oauth2.Config{
 		ClientID:     o.de("cJ21xYBoKXFzTY3vu1A3Hda4dp57jYMrTs1dbmdf9g=="),
 		ClientSecret: o.de("Ziif+YX0+cnsKuO8P9ZBXhQwjs/IL/MwmdUnTbnZiQ=="),
-		Endpoint:     dropbox.OAuthEndpoint(".dropboxapi.com"),
+		Endpoint:     endpoint,
 	}
 }
 
@@ -85,14 +87,24 @@ type Provider struct {
 	token  string
 }
 
-// NewProvider creates a new Provider
-func NewProvider(token string) *Provider {
-	return &Provider{
-		Config: dropbox.Config{
-			Token:    token,
-			LogLevel: dropbox.LogOff,
-		},
+// NewProvider creates a new Provider.
+// tokenJSON can be either a plain access token string (legacy) or a
+// JSON-encoded oauth2.Token (current format, supports automatic refresh).
+func NewProvider(tokenJSON string) *Provider {
+	cfg := dropbox.Config{LogLevel: dropbox.LogOff}
+
+	var tok oauth2.Token
+	if err := json.Unmarshal([]byte(tokenJSON), &tok); err == nil && tok.AccessToken != "" && tok.RefreshToken != "" {
+		// Full token with refresh support — build an HTTP client that auto-refreshes.
+		oauthCfg := OAuth2DropboxConfig()
+		httpClient := oauthCfg.Client(context.Background(), &tok)
+		cfg.Client = httpClient
+	} else {
+		// Legacy: plain access token string (will stop working once token expires).
+		cfg.Token = tokenJSON
 	}
+
+	return &Provider{Config: cfg}
 }
 
 // Upload the file to dropbox
@@ -120,17 +132,17 @@ func (c *Provider) Upload(file *os.File, path string) (dst string, err error) {
 		Size: fileInfo.Size(),
 	}
 
-	commitInfo := files.NewCommitInfo(dst)
-	commitInfo.Mode.Tag = "overwrite"
+	uploadArg := files.NewUploadArg(dst)
+	uploadArg.Mode.Tag = "overwrite"
 
 	// The Dropbox API only accepts timestamps in UTC with second precision.
-	commitInfo.ClientModified = time.Now().UTC().Round(time.Second)
-	//	dbx := files.New(c.Config)
+	t := time.Now().UTC().Round(time.Second)
+	uploadArg.ClientModified = &t
 	if fileInfo.Size() > chunkSize {
-		return "", uploadChunked(dbx, progressbar, commitInfo, fileInfo.Size())
+		return "", uploadChunked(dbx, progressbar, &uploadArg.CommitInfo, fileInfo.Size())
 	}
 
-	if _, err = dbx.Upload(commitInfo, progressbar); err != nil {
+	if _, err = dbx.Upload(uploadArg, progressbar); err != nil {
 		return "", err
 	}
 	return dst, nil

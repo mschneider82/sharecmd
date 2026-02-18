@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/atotto/clipboard v0.1.4
 	github.com/coreos/ioprogress v0.0.0-20151023204047-4637e494fd9b
-	github.com/dropbox/dropbox-sdk-go-unofficial v5.6.0+incompatible
+	github.com/dropbox/dropbox-sdk-go-unofficial/v6 v6.0.5
 	github.com/dustin/go-humanize v1.0.1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mdp/qrterminal v1.0.1
