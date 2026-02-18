@@ -4,4 +4,4 @@ git push origin v0.0.$count
 
 . ./.token
 
-goreleaser --rm-dist
+goreleaser release --clean
