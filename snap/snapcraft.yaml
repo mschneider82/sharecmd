@@ -1,0 +1,33 @@
+name: share
+base: core22
+version: git
+summary: Share your files using Cloudproviders with just one command
+description: |
+  Share uploads the file to the configured cloud provider and does a
+  public share of the file for anyone who has the link. The link will be
+  copied to system clipboard (windows/linux/macos).
+  https://github.com/mschneider82/sharecmd
+
+grade: stable
+confinement: strict
+
+apps:
+  share:
+    command: bin/share
+    plugs:
+      - home
+      - network
+      - x11
+      - desktop
+      - desktop-legacy
+      - unity7
+      - wayland
+
+parts:
+  share:
+    plugin: go
+    source: .
+    build-snaps:
+      - go/1.22/stable
+    stage-packages:
+      - xclip

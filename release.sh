@@ -1,7 +1,10 @@
-count=$(git log --oneline |wc -l)
-git tag -a v0.0.$count -m "release"
-git push origin v0.0.$count
+#!/bin/bash
+set -e
 
-. ./.token
+count=$(git log --oneline | wc -l)
+tag="v0.0.$count"
 
-goreleaser release --clean
+git tag -a "$tag" -m "release"
+git push origin "$tag"
+
+echo "Tag $tag pushed. GitHub Actions will build and release."
