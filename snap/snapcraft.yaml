@@ -1,5 +1,5 @@
 name: share
-base: core22
+base: core24
 version: git
 summary: Share your files using Cloudproviders with just one command
 description: |
