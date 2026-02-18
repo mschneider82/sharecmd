@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"strings"
@@ -14,6 +17,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cast"
 	"golang.org/x/oauth2"
+	"schneider.vip/share/provider/box"
 	"schneider.vip/share/provider/dropbox"
 	"schneider.vip/share/provider/googledrive"
 	"schneider.vip/share/provider/nextcloud"
@@ -21,7 +25,7 @@ import (
 	"schneider.vip/share/urlshortener"
 )
 
-var providers = []string{"dropbox", "opendrive", "seafile", "nextcloud"}
+var providers = []string{"box", "dropbox", "googledrive", "opendrive", "seafile", "nextcloud"}
 
 // Config File Structure
 type Config struct {
@@ -236,21 +240,72 @@ func Setup(configfilepath string) error {
 		config.ProviderSettings["url"] = conf.URL
 		config.ProviderSettings["repoid"] = conf.RepoID
 
+	case "box":
+		conf := box.OAuth2BoxConfig()
+		authURL := conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+		fmt.Println("Opening browser for Box authorization...")
+		fmt.Printf("If it does not open automatically, go to:\n%v\n\n", authURL)
+		openBrowser(authURL)
+
+		codeCh := make(chan string, 1)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			code := r.URL.Query().Get("code")
+			if code != "" {
+				fmt.Fprintf(w, "<html><body><h2>Authorization successful!</h2><p>You can close this tab.</p></body></html>")
+				codeCh <- code
+			}
+		})
+		ln, err := net.Listen("tcp", "127.0.0.1:53682")
+		if err != nil {
+			return fmt.Errorf("failed to start local OAuth server on :53682: %v", err)
+		}
+		srv := &http.Server{Handler: mux}
+		go srv.Serve(ln) //nolint:errcheck
+
+		authcode := <-codeCh
+		srv.Close()
+
+		tok, err := conf.Exchange(context.TODO(), authcode)
+		if err != nil {
+			log.Fatalf("Unable to retrieve token from Box: %v", err)
+		}
+		tokenB, err := json.Marshal(tok)
+		if err != nil {
+			log.Fatalf("Unable to marshal json token %v", err)
+		}
+		config.ProviderSettings["token"] = string(tokenB)
+
 	case "googledrive":
 		conf := googledrive.OAuth2GoogleDriveConfig()
-		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline))
-		fmt.Printf("2. Click \"Allow\" (you might have to log in first).\n")
-		fmt.Printf("3. Copy the authorization code.\n")
 
-		authorizationprompt := promptui.Prompt{
-			Label:   "Authorization Code",
-			Default: "",
-		}
-		authcode, err := authorizationprompt.Run()
+		// OOB (out-of-band) was deprecated by Google in Oct 2022; use loopback instead
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
+			return fmt.Errorf("failed to start local OAuth server: %v", err)
 		}
+		port := listener.Addr().(*net.TCPAddr).Port
+		conf.RedirectURL = fmt.Sprintf("http://localhost:%d", port)
+
+		authURL := conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+		fmt.Println("Opening browser for Google Drive authorization...")
+		fmt.Printf("If it does not open automatically, go to:\n%v\n\n", authURL)
+		openBrowser(authURL)
+
+		codeCh := make(chan string, 1)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			code := r.URL.Query().Get("code")
+			if code != "" {
+				fmt.Fprintf(w, "<html><body><h2>Authorization successful!</h2><p>You can close this tab.</p></body></html>")
+				codeCh <- code
+			}
+		})
+		srv := &http.Server{Handler: mux}
+		go srv.Serve(listener) //nolint:errcheck
+
+		authcode := <-codeCh
+		srv.Close()
 
 		tok, err := conf.Exchange(context.TODO(), authcode)
 		if err != nil {
@@ -321,4 +376,19 @@ func Setup(configfilepath string) error {
 	config.URLShortenerSettings = settings
 	fmt.Println("write config...")
 	return config.Write()
+}
+
+func openBrowser(url string) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		return
+	}
+	_ = cmd.Start()
 }

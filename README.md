@@ -8,8 +8,9 @@ Share your files with your friends using Cloudproviders with just one command.
 
 # Supported Cloud Providers:
 
+* Box
 * Dropbox
-* Google Drive (currently not working)
+* Google Drive
 * OpenDrive
 * Seafile (also private hosted)
 * Nextcloud / Owncloud
@@ -25,7 +26,7 @@ Share your files with your friends using Cloudproviders with just one command.
 ```
 user@srv# share somedocument.pdf
 Uploading 361 B/361 B
-URL: https://drive.google.com/open?id=1C77TZBMT0PESUvsIPetGzrK36LqGFqza
+URL: https://drive.google.com/file/d/1C77TZBMT0PESUvsIPetGzrK36LqGFqza/view?usp=sharing
 Short URL: https://biturl.top/67vE32
 URL copied to clipboard!
 ```
@@ -60,6 +61,9 @@ share of the file for anyone who has the link. The link will be copyed to system
 clipboard (windows/linux/macos)
 
 # Provider Notes:
+
+## Box:
+It uploads all files to /sharecmd (folder auto generated)
 
 ## Dropbox:
 It uploads all files to /Apps/sharecmd (folder auto generated)

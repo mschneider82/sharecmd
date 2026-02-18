@@ -12,7 +12,9 @@ import (
 	"schneider.vip/share/clipboard"
 	"schneider.vip/share/config"
 	"schneider.vip/share/provider"
+	"schneider.vip/share/provider/box"
 	"schneider.vip/share/provider/dropbox"
+	"schneider.vip/share/provider/googledrive"
 	"schneider.vip/share/provider/nextcloud"
 	"schneider.vip/share/provider/opendrive"
 	"schneider.vip/share/provider/seafile"
@@ -73,6 +75,10 @@ func main() {
 				LinkShareWithPassword: cast.ToBool(sharecmd.config.ProviderSettings["linkShareWithPassword"]),
 				RandomPasswordChars:   cast.ToInt(sharecmd.config.ProviderSettings["randomPasswordChars"]),
 			})
+		case "box":
+			sharecmd.provider = box.NewProvider(sharecmd.config.ProviderSettings["token"])
+		case "googledrive":
+			sharecmd.provider = googledrive.NewProvider(sharecmd.config.ProviderSettings["googletoken"])
 		default:
 			config.Setup(*configFile)
 			os.Exit(0)
