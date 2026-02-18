@@ -63,8 +63,12 @@ snapcrafts:
     apps:
       share:
         plugs: ["home", "network", "x11", "desktop", "desktop-legacy", "unity7", "wayland"]
-    stage_packages:
-      - xclip
+    passthrough:
+      parts:
+        share:
+          plugin: nil
+          stage-packages:
+            - xclip
 
 changelog:
   sort: asc
