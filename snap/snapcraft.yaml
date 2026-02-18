@@ -28,6 +28,8 @@ parts:
     plugin: go
     source: .
     build-snaps:
-      - go/1.22/stable
+      - go/latest/stable
+    build-environment:
+      - CGO_ENABLED: "0"
     stage-packages:
       - xclip
