@@ -58,11 +58,13 @@ snapcrafts:
     grade: stable
     confinement: strict
     publish: true
-    #true
     name: share
+    base: core22
     apps:
       share:
         plugs: ["home", "network", "x11", "desktop", "desktop-legacy", "unity7", "wayland"]
+    stage_packages:
+      - xclip
 
 changelog:
   sort: asc
