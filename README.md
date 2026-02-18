@@ -43,13 +43,17 @@ Select a provider and connect the app to your account. The token will be saved t
 [Download precompiled binarys](https://github.com/mschneider82/sharecmd/releases) for your OS
 or compile it from source.
 
-On Linux/Mac/Windows you can use this curl command to always get the latest version:
-
+**Using Go:**
 ```
-curl -sfL https://install.goreleaser.com/github.com/mschneider82/sharecmd.sh | sh
+go install schneider.vip/share@latest
 ```
 
-Or if you use MacOSX you can also use brew:
+**Using Snap (Linux):**
+```
+snap install share
+```
+
+**Using Homebrew (macOS):**
 
 ```
 brew install https://github.com/mschneider82/sharecmd/raw/master/Formula/sharecmd.rb

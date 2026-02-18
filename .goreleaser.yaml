@@ -62,7 +62,7 @@ snapcrafts:
     name: share
     apps:
       share:
-        plugs: ["home", "network", "x11"]
+        plugs: ["home", "network", "x11", "desktop", "desktop-legacy", "unity7", "wayland"]
 
 changelog:
   sort: asc
