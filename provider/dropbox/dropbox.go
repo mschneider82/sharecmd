@@ -8,9 +8,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -18,11 +16,7 @@ import (
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/files"
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/sharing"
-	"github.com/dustin/go-humanize"
 	"golang.org/x/oauth2"
-
-	//"github.com/mitchellh/ioprogress"
-	"github.com/coreos/ioprogress"
 )
 
 const chunkSize int64 = 1 << 24
@@ -49,7 +43,7 @@ func OAuth2DropboxConfig() *oauth2.Config {
 }
 
 func readTokens(filePath string) (TokenMap, error) {
-	b, err := ioutil.ReadFile(filePath)
+	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +70,7 @@ func writeTokens(filePath string, tokens TokenMap) {
 	if err != nil {
 		return
 	}
-	if err = ioutil.WriteFile(filePath, b, 0600); err != nil {
+	if err = os.WriteFile(filePath, b, 0600); err != nil {
 		return
 	}
 }
@@ -108,29 +102,12 @@ func NewProvider(tokenJSON string) *Provider {
 }
 
 // Upload the file to dropbox
-func (c *Provider) Upload(file *os.File, path string) (dst string, err error) {
-	//
-	if path == "" {
-		path = "/"
-	}
-	dst = path + filepath.Base(file.Name())
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return "", err
-	}
+func (c *Provider) Upload(r io.Reader, filename string, size int64) (dst string, err error) {
+	dst = "/" + filename
 
 	delarg := files.NewDeleteArg(dst)
 	dbx := files.New(c.Config)
 	dbx.DeleteV2(delarg)
-
-	progressbar := &ioprogress.Reader{
-		Reader: file,
-		DrawFunc: ioprogress.DrawTerminalf(os.Stderr, func(progress, total int64) string {
-			return fmt.Sprintf("Uploading %s/%s",
-				humanize.IBytes(uint64(progress)), humanize.IBytes(uint64(total)))
-		}),
-		Size: fileInfo.Size(),
-	}
 
 	uploadArg := files.NewUploadArg(dst)
 	uploadArg.Mode.Tag = "overwrite"
@@ -138,11 +115,11 @@ func (c *Provider) Upload(file *os.File, path string) (dst string, err error) {
 	// The Dropbox API only accepts timestamps in UTC with second precision.
 	t := time.Now().UTC().Round(time.Second)
 	uploadArg.ClientModified = &t
-	if fileInfo.Size() > chunkSize {
-		return "", uploadChunked(dbx, progressbar, &uploadArg.CommitInfo, fileInfo.Size())
+	if size > chunkSize {
+		return dst, uploadChunked(dbx, r, &uploadArg.CommitInfo, size)
 	}
 
-	if _, err = dbx.Upload(uploadArg, progressbar); err != nil {
+	if _, err = dbx.Upload(uploadArg, r); err != nil {
 		return "", err
 	}
 	return dst, nil

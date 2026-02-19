@@ -1,42 +1,55 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net"
-	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"runtime"
-	"strings"
-
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cast"
-	"golang.org/x/oauth2"
-	"schneider.vip/share/provider/box"
-	"schneider.vip/share/provider/dropbox"
-	"schneider.vip/share/provider/googledrive"
-	"schneider.vip/share/provider/nextcloud"
-	"schneider.vip/share/provider/seafile"
-	"schneider.vip/share/urlshortener"
 )
 
-var providers = []string{"box", "dropbox", "googledrive", "opendrive", "seafile", "nextcloud"}
-
-// Config File Structure
-type Config struct {
-	Provider             string            `json:"provider"`
-	ProviderSettings     map[string]string `json:"providersettings"`
-	Path                 string
-	URLShortenerProvider string
-	URLShortenerSettings map[string]string
+// ProviderEntry holds a single provider configuration.
+type ProviderEntry struct {
+	Label    string            `json:"label"`
+	Type     string            `json:"type"`
+	Settings map[string]string `json:"settings"`
 }
 
-// UserHomeDir
+// Config is the v2 configuration format supporting multiple providers.
+type Config struct {
+	Version         int             `json:"version"`
+	Active          string          `json:"active"`
+	Providers       []ProviderEntry `json:"providers"`
+	CopyToClipboard *bool           `json:"copy_to_clipboard,omitempty"`
+	ShowQRCode      *bool           `json:"show_qr_code,omitempty"`
+	Path            string          `json:"-"`
+}
+
+// CopyToClipboardEnabled returns whether clipboard copy is enabled (default: true).
+func (c *Config) CopyToClipboardEnabled() bool {
+	if c.CopyToClipboard == nil {
+		return true
+	}
+	return *c.CopyToClipboard
+}
+
+// ShowQRCodeEnabled returns whether QR code display is enabled (default: true).
+func (c *Config) ShowQRCodeEnabled() bool {
+	if c.ShowQRCode == nil {
+		return true
+	}
+	return *c.ShowQRCode
+}
+
+// configV1 is the legacy single-provider format (version 1 / no version field).
+type configV1 struct {
+	Provider             string            `json:"provider"`
+	ProviderSettings     map[string]string `json:"providersettings"`
+	URLShortenerProvider string            `json:"urlshortenerprovider,omitempty"`
+	URLShortenerSettings map[string]string `json:"urlshortenersettings,omitempty"`
+}
+
+// UserHomeDir returns the user's home directory.
 func UserHomeDir() string {
 	env := "HOME"
 	if runtime.GOOS == "windows" {
@@ -47,348 +60,148 @@ func UserHomeDir() string {
 	return os.Getenv(env)
 }
 
-// Write config to disk
-func (c Config) Write() error {
-	err := os.MkdirAll(path.Dir(UserHomeDir()+"/.config/sharecmd/config.json"), 0o700)
+// DefaultConfigPath returns the default config file path.
+func DefaultConfigPath() string {
+	return UserHomeDir() + "/.config/sharecmd/config.json"
+}
+
+// ActiveProvider returns the currently active ProviderEntry, or nil.
+func (c *Config) ActiveProvider() *ProviderEntry {
+	return c.FindByLabel(c.Active)
+}
+
+// FindByLabel returns the provider with the given label, or nil.
+func (c *Config) FindByLabel(label string) *ProviderEntry {
+	for i := range c.Providers {
+		if c.Providers[i].Label == label {
+			return &c.Providers[i]
+		}
+	}
+	return nil
+}
+
+// AddProvider appends a new provider entry.
+func (c *Config) AddProvider(entry ProviderEntry) {
+	c.Providers = append(c.Providers, entry)
+}
+
+// RemoveProvider removes the provider with the given label.
+// If the removed provider was active, Active is cleared.
+func (c *Config) RemoveProvider(label string) {
+	for i := range c.Providers {
+		if c.Providers[i].Label == label {
+			c.Providers = append(c.Providers[:i], c.Providers[i+1:]...)
+			if c.Active == label {
+				c.Active = ""
+			}
+			return
+		}
+	}
+}
+
+// SetActive sets the active provider by label. Returns error if not found.
+func (c *Config) SetActive(label string) error {
+	if c.FindByLabel(label) == nil {
+		return fmt.Errorf("provider %q not found", label)
+	}
+	c.Active = label
+	return nil
+}
+
+// ProviderLabels returns a list of all configured provider labels.
+func (c *Config) ProviderLabels() []string {
+	labels := make([]string, len(c.Providers))
+	for i, p := range c.Providers {
+		labels[i] = p.Label
+	}
+	return labels
+}
+
+// Write saves the config to disk at its Path.
+func (c *Config) Write() error {
+	err := os.MkdirAll(path.Dir(c.Path), 0o700)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Saving config to %s \n", UserHomeDir()+"/.config/sharecmd/config.json")
-	p := UserHomeDir() + "/.config/sharecmd/config.json"
-	output, err := os.Create(p)
+	output, err := os.Create(c.Path)
 	if err != nil {
 		return err
 	}
 	defer output.Close()
 
-	return json.NewEncoder(output).Encode(c)
+	enc := json.NewEncoder(output)
+	enc.SetIndent("", "  ")
+	return enc.Encode(c)
 }
 
-// LoadConfig from disk
-func LoadConfig(path string) (Config, error) {
-	config := Config{
-		Path:             path,
-		ProviderSettings: make(map[string]string),
-	}
-
-	content, err := ioutil.ReadFile(path)
+// LoadConfig loads the config from disk, auto-migrating v1 format.
+func LoadConfig(filepath string) (*Config, error) {
+	content, err := os.ReadFile(filepath)
 	if os.IsNotExist(err) {
-		return config, nil
-	} else if err != nil {
-		return config, err
+		return &Config{
+			Version:   2,
+			Path:      filepath,
+			Providers: []ProviderEntry{},
+		}, nil
 	}
-
-	err = json.Unmarshal(content, &config)
-	config.Path = path
-
-	return config, err
-}
-
-// LookupConfig search config and load it
-func LookupConfig(configfilepath string) (Config, error) {
-	if configfilepath == "" {
-		configfilepath = UserHomeDir() + "/.config/sharecmd/config.json"
-	}
-
-	config, err := LoadConfig(configfilepath)
-	return config, err
-}
-
-// Setup asks user for input
-func Setup(configfilepath string) error {
-	config := Config{
-		Path:             "/sharecmd",
-		ProviderSettings: make(map[string]string),
-	}
-	prompt := promptui.Select{
-		Label: "Select Provider",
-		Items: providers,
-	}
-
-	_, provider, err := prompt.Run()
 	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		return err
+		return nil, err
 	}
-	config.Provider = provider
-	fmt.Printf("You choose %q\n", provider)
 
-	switch provider {
-	case "nextcloud":
-		conf := nextcloud.Config{}
-		p := promptui.Prompt{
-			Label:   "Nextcloud URL (e.g. https://example.com)",
-			Default: "",
-		}
-		conf.URL, err = p.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-		p = promptui.Prompt{
-			Label:   "Username",
-			Default: "",
-		}
-		conf.Username, err = p.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-
-		p = promptui.Prompt{
-			Label:   "Password",
-			Default: "",
-			Mask:    '*',
-		}
-		conf.Password, err = p.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-
-		p = promptui.Prompt{
-			Label:   "Use Password protected link Shares [y/N] ",
-			Default: "N",
-		}
-		linkShareWithPassword, err := p.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-
-		usePass := strings.ToLower(linkShareWithPassword) == "y" || strings.ToLower(linkShareWithPassword) == "yes"
-
-		randomPwChars := "32"
-		if usePass {
-			p = promptui.Prompt{
-				Label:   "How many Random Password Chars",
-				Default: "32",
-			}
-			randomPwChars, err = p.Run()
-			if err != nil {
-				fmt.Printf("Prompt failed %v\n", err)
-				return err
-			}
-		}
-
-		config.ProviderSettings["username"] = conf.Username
-		config.ProviderSettings["password"] = conf.Password
-		config.ProviderSettings["url"] = conf.URL
-		config.ProviderSettings["linkShareWithPassword"] = cast.ToString(usePass)
-		config.ProviderSettings["randomPasswordChars"] = cast.ToString(randomPwChars)
-
-	case "seafile":
-		conf := seafile.Config{}
-		urlPrompt := promptui.Prompt{
-			Label:   "Seafile URL (e.g. https://seacloud.cc)",
-			Default: "",
-		}
-		conf.URL, err = urlPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-		userPrompt := promptui.Prompt{
-			Label:   "Username",
-			Default: "",
-		}
-		conf.Username, err = userPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-
-		passwordPrompt := promptui.Prompt{
-			Label:   "Password",
-			Default: "",
-			Mask:    '*',
-		}
-		conf.Password, err = passwordPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-
-		twoFactorPrompt := promptui.Prompt{
-			Label: "Is two factor auth enabled [y/N] ?",
-		}
-		twoFactorEnabled, err := twoFactorPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-		if strings.ToLower(twoFactorEnabled) == "y" {
-			conf.TwoFactorEnabled = true
-			otpPrompt := promptui.Prompt{
-				Label:   "OTP Token",
-				Default: "",
-			}
-			conf.OTP, err = otpPrompt.Run()
-			if err != nil {
-				fmt.Printf("Prompt failed %v\n", err)
-				return err
-			}
-		}
-
-		token, err := conf.GetToken()
-		if err != nil {
-			fmt.Println(err.Error())
-			return err
-		}
-		conf.CreateLibrary(token)
-		config.ProviderSettings["token"] = token
-		config.ProviderSettings["url"] = conf.URL
-		config.ProviderSettings["repoid"] = conf.RepoID
-
-	case "box":
-		conf := box.OAuth2BoxConfig()
-		authURL := conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-		fmt.Println("Opening browser for Box authorization...")
-		fmt.Printf("If it does not open automatically, go to:\n%v\n\n", authURL)
-		openBrowser(authURL)
-
-		codeCh := make(chan string, 1)
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			code := r.URL.Query().Get("code")
-			if code != "" {
-				fmt.Fprintf(w, "<html><body><h2>Authorization successful!</h2><p>You can close this tab.</p></body></html>")
-				codeCh <- code
-			}
-		})
-		ln, err := net.Listen("tcp", "127.0.0.1:53682")
-		if err != nil {
-			return fmt.Errorf("failed to start local OAuth server on :53682: %v", err)
-		}
-		srv := &http.Server{Handler: mux}
-		go srv.Serve(ln) //nolint:errcheck
-
-		authcode := <-codeCh
-		srv.Close()
-
-		tok, err := conf.Exchange(context.TODO(), authcode)
-		if err != nil {
-			log.Fatalf("Unable to retrieve token from Box: %v", err)
-		}
-		tokenB, err := json.Marshal(tok)
-		if err != nil {
-			log.Fatalf("Unable to marshal json token %v", err)
-		}
-		config.ProviderSettings["token"] = string(tokenB)
-
-	case "googledrive":
-		conf := googledrive.OAuth2GoogleDriveConfig()
-
-		// OOB (out-of-band) was deprecated by Google in Oct 2022; use loopback instead
-		listener, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			return fmt.Errorf("failed to start local OAuth server: %v", err)
-		}
-		port := listener.Addr().(*net.TCPAddr).Port
-		conf.RedirectURL = fmt.Sprintf("http://localhost:%d", port)
-
-		authURL := conf.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-		fmt.Println("Opening browser for Google Drive authorization...")
-		fmt.Printf("If it does not open automatically, go to:\n%v\n\n", authURL)
-		openBrowser(authURL)
-
-		codeCh := make(chan string, 1)
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			code := r.URL.Query().Get("code")
-			if code != "" {
-				fmt.Fprintf(w, "<html><body><h2>Authorization successful!</h2><p>You can close this tab.</p></body></html>")
-				codeCh <- code
-			}
-		})
-		srv := &http.Server{Handler: mux}
-		go srv.Serve(listener) //nolint:errcheck
-
-		authcode := <-codeCh
-		srv.Close()
-
-		tok, err := conf.Exchange(context.TODO(), authcode)
-		if err != nil {
-			log.Fatalf("Unable to retrieve token from web %v", err)
-		}
-
-		tokenB, err := json.Marshal(tok)
-		if err != nil {
-			log.Fatalf("Unable to marshal json token %v", err)
-		}
-
-		config.ProviderSettings["googletoken"] = string(tokenB)
-
-	case "dropbox":
-		conf := dropbox.OAuth2DropboxConfig()
-		fmt.Printf("1. Go to %v\n", conf.AuthCodeURL("state", oauth2.SetAuthURLParam("token_access_type", "offline")))
-		fmt.Printf("2. Click \"Allow\" (you might have to log in first).\n")
-		fmt.Printf("3. Copy the authorization code.\n")
-
-		authorizationprompt := promptui.Prompt{
-			Label:   "Authorization Code",
-			Default: "",
-		}
-		authcode, err := authorizationprompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-
-		var token *oauth2.Token
-		ctx := context.Background()
-		token, err = conf.Exchange(ctx, authcode)
-		if err != nil {
-			return err
-		}
-		tokenB, err := json.Marshal(token)
-		if err != nil {
-			return err
-		}
-		config.ProviderSettings["token"] = string(tokenB)
-	case "opendrive":
-		var user, password string
-		userPrompt := promptui.Prompt{
-			Label:   "Username",
-			Default: "",
-		}
-		user, err = userPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-
-		passwordPrompt := promptui.Prompt{
-			Label:   "Password",
-			Default: "",
-			Mask:    '*',
-		}
-		password, err = passwordPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-		config.ProviderSettings["user"] = user
-		config.ProviderSettings["pass"] = password
+	// Peek at the version field.
+	var probe struct {
+		Version int `json:"version"`
 	}
-	u, settings := urlshortener.Questions()
-	config.URLShortenerProvider = u
-	config.URLShortenerSettings = settings
-	fmt.Println("write config...")
-	return config.Write()
+	if err := json.Unmarshal(content, &probe); err != nil {
+		return nil, fmt.Errorf("invalid config JSON: %w", err)
+	}
+
+	if probe.Version >= 2 {
+		cfg := &Config{}
+		if err := json.Unmarshal(content, cfg); err != nil {
+			return nil, err
+		}
+		cfg.Path = filepath
+		return cfg, nil
+	}
+
+	// v1 migration
+	return migrateV1(content, filepath)
 }
 
-func openBrowser(url string) {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "linux":
-		cmd = exec.Command("xdg-open", url)
-	case "darwin":
-		cmd = exec.Command("open", url)
-	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
-	default:
-		return
+func migrateV1(data []byte, filepath string) (*Config, error) {
+	var v1 configV1
+	if err := json.Unmarshal(data, &v1); err != nil {
+		return nil, fmt.Errorf("failed to parse v1 config: %w", err)
 	}
-	_ = cmd.Start()
+
+	cfg := &Config{
+		Version:   2,
+		Path:      filepath,
+		Providers: []ProviderEntry{},
+	}
+
+	if v1.Provider != "" {
+		settings := v1.ProviderSettings
+		if settings == nil {
+			settings = make(map[string]string)
+		}
+		entry := ProviderEntry{
+			Label:    v1.Provider,
+			Type:     v1.Provider,
+			Settings: settings,
+		}
+		cfg.Providers = append(cfg.Providers, entry)
+		cfg.Active = v1.Provider
+	}
+
+	return cfg, nil
+}
+
+// LookupConfig loads config from the given path (or default).
+func LookupConfig(configfilepath string) (*Config, error) {
+	if configfilepath == "" {
+		configfilepath = DefaultConfigPath()
+	}
+	return LoadConfig(configfilepath)
 }

@@ -6,15 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/coreos/ioprogress"
-	humanize "github.com/dustin/go-humanize"
 	"github.com/mschneider82/easygo"
 )
 
@@ -47,7 +42,7 @@ func (c *Config) GetToken() (string, error) {
 	var response struct {
 		Token string `json:"token"`
 	}
-	resultBody, err := ioutil.ReadAll(resp.Body)
+	resultBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("result body error: %s, expting token got: %s", err.Error(), string(resultBody))
 	}
@@ -81,7 +76,7 @@ func (c *Config) CreateLibrary(token string) error {
 	var response struct {
 		RepoID string `json:"repo_id"`
 	}
-	resultBody, err := ioutil.ReadAll(resp.Body)
+	resultBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("result body error: %s, expecting repoid got: %s", err.Error(), string(resultBody))
 	}
@@ -102,41 +97,26 @@ type Provider struct {
 	RepoID string
 }
 
-func (s *Provider) Upload(file *os.File, path string) (fileID string, err error) {
-
+func (s *Provider) Upload(r io.Reader, filename string, size int64) (fileID string, err error) {
 	// get upload link
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api2/repos/%s/upload-link/?p=/&replace=1", s.URL, s.RepoID), nil)
 	if err != nil {
-		// handle err
+		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", s.Token))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		// handle err
+		return "", err
 	}
 	defer resp.Body.Close()
-	uploadLinkBroken, err := ioutil.ReadAll(resp.Body)
+	uploadLinkBroken, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("result body error: %s, expecting repoid got: %s", err.Error(), string(uploadLinkBroken))
 	}
 	uploadLink := easygo.StringStrip(string(uploadLinkBroken), `"`)
-	// upload file
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return "", err
-	}
-	progressbar := &ioprogress.Reader{
-		Reader: file,
-		DrawFunc: ioprogress.DrawTerminalf(os.Stderr, func(progress, total int64) string {
-			return fmt.Sprintf("Uploading %s/%s",
-				humanize.IBytes(uint64(progress)), humanize.IBytes(uint64(total)))
-		}),
-		Size: fileInfo.Size(),
-	}
-	filename := filepath.Base(file.Name())
 
-	_, err = uploadfile(uploadLink, "/", filename, s.Token, progressbar)
+	_, err = uploadfile(uploadLink, "/", filename, s.Token, r)
 	if err != nil {
 		return "", err
 	}
@@ -175,7 +155,7 @@ func uploadfile(uploadlink, folder, filename, token string, src io.Reader) (stri
 		return "", err
 	}
 
-	responsebody, err := ioutil.ReadAll(resp.Body)
+	responsebody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

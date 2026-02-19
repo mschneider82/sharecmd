@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/alecthomas/kingpin/v2"
+	"github.com/alecthomas/kong"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mdp/qrterminal"
 	"github.com/spf13/cast"
 	"schneider.vip/share/clipboard"
@@ -15,97 +17,148 @@ import (
 	"schneider.vip/share/provider/box"
 	"schneider.vip/share/provider/dropbox"
 	"schneider.vip/share/provider/googledrive"
+	"schneider.vip/share/provider/httpupload"
 	"schneider.vip/share/provider/nextcloud"
 	"schneider.vip/share/provider/opendrive"
 	"schneider.vip/share/provider/seafile"
-	"schneider.vip/share/urlshortener"
-	"schneider.vip/share/urlshortener/biturl"
+	"schneider.vip/share/tui/setup"
+	"schneider.vip/share/tui/upload"
 )
 
-var (
-	configFile  = kingpin.Flag("config", "Client configuration file").Default(config.UserHomeDir() + "/.config/sharecmd/config.json").String()
-	setup       = kingpin.Flag("setup", "Setup client configuration").Bool()
-	file        = kingpin.Arg("file", "filename to upload").File()
-	versionflag = kingpin.Flag("version", "print build Version").Short('v').Bool()
-	version     = "0.0.0"
-)
+var version = "0.0.0"
 
-// ShareCmd cli app
-type ShareCmd struct {
-	config   *config.Config
-	provider provider.Provider
-	shorturl urlshortener.URLShortener
+type CLI struct {
+	Config  string `help:"Path to config file." default:"~/.config/sharecmd/config.json" type:"path"`
+	Setup   bool   `help:"Launch interactive setup." short:"s"`
+	Version bool   `help:"Print version and exit." short:"v"`
+	File    string `arg:"" optional:"" help:"File to upload." type:"existingfile"`
 }
 
 func main() {
-	kingpin.Parse()
+	cli := CLI{}
+	kong.Parse(&cli,
+		kong.Name("share"),
+		kong.Description("Upload files to cloud storage and get a shareable link."),
+		kong.UsageOnError(),
+	)
 
-	if *versionflag {
+	if cli.Version {
 		fmt.Printf("ShareCmd Version: %s\n", version)
 		os.Exit(0)
 	}
 
-	if *setup {
-		if err := config.Setup(*configFile); err != nil {
+	configPath := cli.Config
+	if configPath == "" {
+		configPath = config.DefaultConfigPath()
+	}
+
+	cfg, err := config.LookupConfig(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v\n", err)
+	}
+
+	if cli.Setup || cfg.ActiveProvider() == nil {
+		if err := setup.Run(cfg); err != nil {
 			log.Fatalf("Setup failed: %v\n", err)
 		}
-		os.Exit(0)
-	}
-	if file != nil {
-		sharecmd := ShareCmd{}
-		cfg, err := config.LookupConfig(*configFile)
-		if err != nil {
-			log.Fatalf("lookupConfig: %v \n", err)
-		}
-		sharecmd.config = &cfg
-
-		switch sharecmd.config.Provider {
-		case "seafile":
-			sharecmd.provider = seafile.NewProvider(sharecmd.config.ProviderSettings["url"], sharecmd.config.ProviderSettings["token"], sharecmd.config.ProviderSettings["repoid"])
-		case "opendrive":
-			sharecmd.provider = opendrive.NewProvider(sharecmd.config.ProviderSettings["user"],
-				sharecmd.config.ProviderSettings["pass"])
-		case "dropbox":
-			sharecmd.provider = dropbox.NewProvider(cfg.ProviderSettings["token"])
-		case "nextcloud":
-			sharecmd.provider = nextcloud.NewProvider(nextcloud.Config{
-				URL:                   sharecmd.config.ProviderSettings["url"],
-				Username:              sharecmd.config.ProviderSettings["username"],
-				Password:              sharecmd.config.ProviderSettings["password"],
-				LinkShareWithPassword: cast.ToBool(sharecmd.config.ProviderSettings["linkShareWithPassword"]),
-				RandomPasswordChars:   cast.ToInt(sharecmd.config.ProviderSettings["randomPasswordChars"]),
-			})
-		case "box":
-			sharecmd.provider = box.NewProvider(sharecmd.config.ProviderSettings["token"])
-		case "googledrive":
-			sharecmd.provider = googledrive.NewProvider(sharecmd.config.ProviderSettings["googletoken"])
-		default:
-			config.Setup(*configFile)
+		if cli.File == "" {
 			os.Exit(0)
 		}
+		// Reload config after setup
+		cfg, err = config.LookupConfig(configPath)
+		if err != nil {
+			log.Fatalf("Failed to reload config: %v\n", err)
+		}
+	}
 
-		fileid, err := sharecmd.provider.Upload(*file, "")
-		if err != nil {
-			log.Fatalf("Can't upload file: %s", err.Error())
-		}
-		link, err := sharecmd.provider.GetLink(fileid)
-		if err != nil {
-			log.Fatalf("Can't get link for file: %s", err.Error())
-		}
+	if cli.File == "" {
+		os.Exit(0)
+	}
+
+	active := cfg.ActiveProvider()
+	if active == nil {
+		log.Fatal("No active provider configured. Run 'share --setup' to configure.")
+	}
+
+	prov, err := instantiateProvider(active)
+	if err != nil {
+		log.Fatalf("Failed to create provider: %v\n", err)
+	}
+
+	file, err := os.Open(cli.File)
+	if err != nil {
+		log.Fatalf("Can't open file: %v\n", err)
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		log.Fatalf("Can't stat file: %v\n", err)
+	}
+	filename := filepath.Base(file.Name())
+	filesize := fileInfo.Size()
+
+	// Upload with progress TUI
+	var fileID string
+	var uploadErr error
+
+	model := upload.NewModel(filename, filesize)
+	p := tea.NewProgram(model)
+	pr := upload.NewProgressReader(file, filesize, p)
+
+	go func() {
+		fileID, uploadErr = prov.Upload(pr, filename, filesize)
+		upload.SendDone(p, fileID, uploadErr)
+	}()
+
+	if _, err := p.Run(); err != nil {
+		log.Fatalf("TUI error: %v\n", err)
+	}
+
+	if uploadErr != nil {
+		log.Fatalf("Upload failed: %v\n", uploadErr)
+	}
+
+	link, err := prov.GetLink(fileID)
+	if err != nil {
+		log.Fatalf("Can't get link: %v\n", err)
+	}
+
+	if cfg.ShowQRCodeEnabled() {
 		var qr strings.Builder
 		qrterminal.Generate(link, qrterminal.L, &qr)
 		fmt.Printf("\n%s\n", qr.String())
-		fmt.Printf("URL: %s\n", link)
-		switch sharecmd.config.URLShortenerProvider {
-		case "biturl":
-			sharecmd.shorturl = biturl.New(link)
-			shorturl, err := sharecmd.shorturl.ShortURL()
-			if err == nil {
-				link = shorturl
-				fmt.Printf("Short URL: %s\n", link)
-			}
-		default:
-		}
+	}
+	fmt.Printf("URL: %s\n", link)
+
+	if cfg.CopyToClipboardEnabled() {
 		clipboard.ToClip(link)
+	}
+}
+
+func instantiateProvider(entry *config.ProviderEntry) (provider.Provider, error) {
+	switch entry.Type {
+	case "httpupload":
+		return httpupload.NewProvider(entry.Settings["url"], entry.Settings["headers"]), nil
+	case "seafile":
+		return seafile.NewProvider(entry.Settings["url"], entry.Settings["token"], entry.Settings["repoid"]), nil
+	case "opendrive":
+		return opendrive.NewProvider(entry.Settings["user"], entry.Settings["pass"]), nil
+	case "dropbox":
+		return dropbox.NewProvider(entry.Settings["token"]), nil
+	case "nextcloud":
+		return nextcloud.NewProvider(nextcloud.Config{
+			URL:                   entry.Settings["url"],
+			Username:              entry.Settings["username"],
+			Password:              entry.Settings["password"],
+			LinkShareWithPassword: cast.ToBool(entry.Settings["linkShareWithPassword"]),
+			RandomPasswordChars:   cast.ToInt(entry.Settings["randomPasswordChars"]),
+		}), nil
+	case "box":
+		return box.NewProvider(entry.Settings["token"]), nil
+	case "googledrive":
+		return googledrive.NewProvider(entry.Settings["googletoken"]), nil
+	default:
+		return nil, fmt.Errorf("unknown provider type: %s", entry.Type)
 	}
 }

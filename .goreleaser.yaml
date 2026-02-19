@@ -47,6 +47,18 @@ nfpms:
       - deb
       - rpm
 
+brews:
+  - repository:
+      owner: mschneider82
+      name: sharecmd
+      branch: master
+    directory: Formula
+    homepage: https://github.com/mschneider82/sharecmd
+    description: Share your files using cloud providers with just one command.
+    license: Apache-2.0
+    test: |
+      system "#{bin}/share", "--version"
+
 changelog:
   sort: asc
   filters:

@@ -13,8 +13,6 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"golang.org/x/oauth2"
 )
@@ -67,15 +65,19 @@ func (p *Provider) httpClient() *http.Client {
 }
 
 // Upload uploads a file to Box inside a "sharecmd" folder and returns the file ID
-func (p *Provider) Upload(file *os.File, path string) (string, error) {
+func (p *Provider) Upload(r io.Reader, filename string, size int64) (string, error) {
 	client := p.httpClient()
+
+	// Buffer content so it can be reused if we need to upload a new version
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return "", fmt.Errorf("read file: %w", err)
+	}
 
 	folderID, err := getOrCreateFolder(client, "sharecmd")
 	if err != nil {
 		return "", fmt.Errorf("folder: %w", err)
 	}
-
-	filename := filepath.Base(file.Name())
 
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
@@ -88,7 +90,7 @@ func (p *Provider) Upload(file *os.File, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := io.Copy(fw, file); err != nil {
+	if _, err := fw.Write(content); err != nil {
 		return "", err
 	}
 	mw.Close()
@@ -105,6 +107,22 @@ func (p *Provider) Upload(file *os.File, path string) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusConflict {
+		// File already exists — parse the conflicting file ID and upload a new version
+		var conflict struct {
+			ContextInfo struct {
+				Conflicts struct {
+					ID string `json:"id"`
+				} `json:"conflicts"`
+			} `json:"context_info"`
+		}
+		b, _ := io.ReadAll(resp.Body)
+		if err := json.Unmarshal(b, &conflict); err != nil || conflict.ContextInfo.Conflicts.ID == "" {
+			return "", fmt.Errorf("upload conflict but could not parse existing file ID: %s", string(b))
+		}
+		return p.uploadNewVersion(client, conflict.ContextInfo.Conflicts.ID, filename, content)
+	}
+
 	if resp.StatusCode != http.StatusCreated {
 		b, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("upload failed (%d): %s", resp.StatusCode, string(b))
@@ -120,6 +138,55 @@ func (p *Provider) Upload(file *os.File, path string) (string, error) {
 	}
 	if len(result.Entries) == 0 {
 		return "", fmt.Errorf("upload response contained no file entries")
+	}
+	return result.Entries[0].ID, nil
+}
+
+// uploadNewVersion replaces an existing file on Box with new content
+func (p *Provider) uploadNewVersion(client *http.Client, fileID, filename string, content []byte) (string, error) {
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+
+	attrs := fmt.Sprintf(`{"name":%q}`, filename)
+	if err := mw.WriteField("attributes", attrs); err != nil {
+		return "", err
+	}
+	fw, err := mw.CreateFormFile("file", filename)
+	if err != nil {
+		return "", err
+	}
+	if _, err := fw.Write(content); err != nil {
+		return "", err
+	}
+	mw.Close()
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/files/%s/content", uploadBase, fileID), &body)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("upload new version failed (%d): %s", resp.StatusCode, string(b))
+	}
+
+	var result struct {
+		Entries []struct {
+			ID string `json:"id"`
+		} `json:"entries"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	if len(result.Entries) == 0 {
+		return "", fmt.Errorf("upload new version response contained no file entries")
 	}
 	return result.Entries[0].ID, nil
 }

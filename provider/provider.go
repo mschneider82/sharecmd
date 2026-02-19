@@ -1,11 +1,11 @@
 package provider
 
 import (
-	"os"
+	"io"
 )
 
 // Provider Interface...
 type Provider interface {
-	Upload(file *os.File, path string) (string, error)
+	Upload(r io.Reader, filename string, size int64) (string, error)
 	GetLink(string) (string, error)
 }

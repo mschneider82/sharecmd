@@ -12,11 +12,8 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 
-	"github.com/coreos/ioprogress"
-	humanize "github.com/dustin/go-humanize"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	drive "google.golang.org/api/drive/v3"
@@ -94,29 +91,15 @@ func (c *Provider) getClient() *http.Client {
 }
 
 // Upload the file
-func (c *Provider) Upload(file *os.File, path string) (fileID string, err error) {
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return "", err
-	}
-
+func (c *Provider) Upload(r io.Reader, filename string, size int64) (fileID string, err error) {
 	client := c.getClient()
 	srv, err := drive.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	progressbar := &ioprogress.Reader{
-		Reader: file,
-		DrawFunc: ioprogress.DrawTerminalf(os.Stderr, func(progress, total int64) string {
-			return fmt.Sprintf("Uploading %s/%s",
-				humanize.IBytes(uint64(progress)), humanize.IBytes(uint64(total)))
-		}),
-		Size: fileInfo.Size(),
-	}
 	parendID := getOrCreateFolder(srv, "sharecmd")
 
-	filename := filepath.Base(file.Name())
 	fileext := filepath.Ext(filename)
 
 	f := &drive.File{
@@ -126,11 +109,11 @@ func (c *Provider) Upload(file *os.File, path string) (fileID string, err error)
 	if mimeExtentions[fileext] != "" {
 		f.MimeType = mimeExtentions[fileext]
 	}
-	r, err := srv.Files.Create(f).Media(progressbar).Do()
+	result, err := srv.Files.Create(f).Media(r).Do()
 	if err != nil {
 		return "", err
 	}
-	return r.Id, nil
+	return result.Id, nil
 }
 
 // GetLink for fileid

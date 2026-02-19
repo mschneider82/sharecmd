@@ -4,10 +4,11 @@
 
 # Go Share files!
 
-Share your files with your friends using Cloudproviders with just one command.
+Share your files with your friends using cloud providers with just one command.
 
 # Supported Cloud Providers:
 
+* **HTTP Upload** — any server that accepts HTTP PUT (e.g. WebDAV, custom APIs)
 * Box
 * Dropbox
 * Google Drive
@@ -16,31 +17,52 @@ Share your files with your friends using Cloudproviders with just one command.
 * Nextcloud / Owncloud
 * Any missing? Create an Issue or PR!
 
-# Optional Support for URL Shortener:
-
-* Biturl.top
-* ...
-
-# Howto share?
+# How to share?
 
 ```
-user@srv# share somedocument.pdf
-Uploading 361 B/361 B
-URL: https://drive.google.com/file/d/1C77TZBMT0PESUvsIPetGzrK36LqGFqza/view?usp=sharing
-Short URL: https://biturl.top/67vE32
+$ share somedocument.pdf
+Uploading somedocument.pdf
+
+████████████████████████████████████████  100%
+361 B / 361 B  120.3 KiB/s
+
+URL: https://drive.google.com/file/d/1C77TZ.../view?usp=sharing
 URL copied to clipboard!
 ```
 
-# Howto setup?
+# How to setup?
 
 ```
-user@srv# share --setup
+$ share --setup
 ```
-Select a provider and connect the app to your account. The token will be saved to your disk.
 
-# Howto install?
+An interactive TUI guides you through the setup. You can configure multiple providers and switch between them.
 
-[Download precompiled binarys](https://github.com/mschneider82/sharecmd/releases) for your OS
+```
+ShareCmd Setup  (active: my-dropbox)
+? What would you like to do?
+  > Select active provider
+    Add new provider
+    Edit provider
+    Delete provider
+    Preferences
+    Quit
+```
+
+## Multiple providers
+
+You can add as many provider configurations as you want, each with a unique label (e.g. `work-nextcloud`, `personal-dropbox`). Use **Select active provider** to switch between them.
+
+## Preferences
+
+Under **Preferences** you can toggle:
+
+* **Copy URL to clipboard** — enabled by default
+* **QR code display** — enabled by default
+
+# How to install?
+
+[Download precompiled binaries](https://github.com/mschneider82/sharecmd/releases) for your OS
 or compile it from source.
 
 **Using Go:**
@@ -53,33 +75,67 @@ go install schneider.vip/share@latest
 snap install share
 ```
 
-**Using Homebrew (macOS):**
+**Using Homebrew (macOS/Linux):**
 
 ```
-brew install https://github.com/mschneider82/sharecmd/raw/master/Formula/sharecmd.rb
+brew tap mschneider82/sharecmd https://github.com/mschneider82/sharecmd
+brew install sharecmd
 ```
 
-# Notes:
-Sharecmd uploads the file to the configured cloud provider and does a public
-share of the file for anyone who has the link. The link will be copyed to system
-clipboard (windows/linux/macos)
+# CLI Usage
 
-# Provider Notes:
+```
+$ share [flags] [file]
+```
 
-## Box:
-It uploads all files to /sharecmd (folder auto generated)
+| Flag | Description |
+|------|-------------|
+| `--setup`, `-s` | Launch interactive setup |
+| `--version`, `-v` | Print version and exit |
+| `--config PATH` | Path to config file (default: `~/.config/sharecmd/config.json`) |
 
-## Dropbox:
-It uploads all files to /Apps/sharecmd (folder auto generated)
+If no active provider is configured, setup launches automatically.
 
-## Googledrive:
-It uploads all files to /sharecmd (folder auto generated)
+# Notes
 
-## Opendrive
-It uploads all files to /sharecmd (folder auto generated)
+ShareCmd uploads the file to the configured cloud provider and creates a public
+share link for anyone who has the link. The link is printed (with optional QR code)
+and optionally copied to the system clipboard (Windows/Linux/macOS).
 
-## Seafile:
-It creates a new Library called sharecmd on setup
+The configuration is stored in `~/.config/sharecmd/config.json`. Old single-provider
+configs (v1) are automatically migrated to the new multi-provider format on first load.
 
-## Own/Nextcloud:
-The folder /sharecmd will be auto generated.
+# Provider Notes
+
+## HTTP Upload
+Uploads files via HTTP PUT to a configurable base URL. The file is PUT to `<base-url>/<filename>`.
+
+Custom HTTP headers can be added as JSON. Header values support Go template functions for dynamic values:
+
+| Function | Description | Example output |
+|----------|-------------|----------------|
+| `{{now "2006-01-02"}}` | Current date | `2026-02-19` |
+| `{{addDays N "2006-01-02"}}` | Date + N days | `2026-02-26` |
+
+Example header configuration for a purge-date header one week in the future:
+```json
+{"x-purgets": "{{addDays 7 \"2006-01-02\"}}T16:09:09+02:00"}
+```
+
+## Box
+Uploads all files to `/sharecmd` (folder auto-generated). Re-uploading the same filename creates a new version.
+
+## Dropbox
+Uploads all files to `/` (overwrite mode).
+
+## Google Drive
+Uploads all files to `/sharecmd` (folder auto-generated).
+
+## OpenDrive
+Uploads all files to `/sharecmd` (folder auto-generated).
+
+## Seafile
+Creates a new library called `sharecmd` on setup.
+
+## Nextcloud / Owncloud
+The folder `/sharecmd` is auto-generated.

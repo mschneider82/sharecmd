@@ -3,15 +3,11 @@ package nextcloud
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/coreos/ioprogress"
-	humanize "github.com/dustin/go-humanize"
 	"github.com/sethvargo/go-password/password"
 )
 
@@ -31,26 +27,12 @@ func NewProvider(c Config) *Provider {
 	return &Provider{config: c}
 }
 
-func (s *Provider) Upload(file *os.File, path string) (string, error) {
+func (s *Provider) Upload(r io.Reader, filename string, size int64) (string, error) {
 	if err := s.createFolder("sharecmd"); err != nil {
 		fmt.Printf("could not create folder: %s\n", err.Error())
 	}
 
-	filename := filepath.Base(file.Name())
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return "", err
-	}
-	progressbar := &ioprogress.Reader{
-		Reader: file,
-		DrawFunc: ioprogress.DrawTerminalf(os.Stderr, func(progress, total int64) string {
-			return fmt.Sprintf("Uploading %s/%s",
-				humanize.IBytes(uint64(progress)), humanize.IBytes(uint64(total)))
-		}),
-		Size: fileInfo.Size(),
-	}
-
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/remote.php/webdav/sharecmd/%s", s.config.URL, filename), progressbar)
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/remote.php/webdav/sharecmd/%s", s.config.URL, filename), r)
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +88,7 @@ func (s *Provider) getLink(filename string, pass string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
