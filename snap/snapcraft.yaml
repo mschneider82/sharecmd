@@ -1,6 +1,6 @@
 name: share
 base: core24
-version: git
+adopt-info: share
 summary: Share your files using Cloudproviders with just one command
 description: |
   Share uploads the file to the configured cloud provider and does a
@@ -33,3 +33,8 @@ parts:
       - CGO_ENABLED: "0"
     stage-packages:
       - xclip
+    override-pull: |
+      craftctl default
+      VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+      VERSION=${VERSION#v}
+      craftctl set version="$VERSION"
