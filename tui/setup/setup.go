@@ -279,6 +279,11 @@ func editPreferences(cfg *config.Config) error {
 }
 
 func pickProvider(cfg *config.Config, title string) (string, error) {
+	return PickProvider(cfg, title)
+}
+
+// PickProvider shows an interactive menu to select a provider.
+func PickProvider(cfg *config.Config, title string) (string, error) {
 	var label string
 	options := make([]huh.Option[string], len(cfg.Providers))
 	for i, p := range cfg.Providers {
@@ -297,6 +302,30 @@ func pickProvider(cfg *config.Config, title string) (string, error) {
 		return "", err
 	}
 	return label, nil
+}
+
+// ReconfigureProvider re-authenticates a specific provider by label
+func ReconfigureProvider(cfg *config.Config, label string) error {
+	entry := cfg.FindByLabel(label)
+	if entry == nil {
+		return fmt.Errorf("provider %q not found", label)
+	}
+
+	fmt.Println(tui.Title.Render(fmt.Sprintf("Re-authenticating provider: %s (%s)", entry.Label, entry.Type)))
+	fmt.Println("Your authentication has expired. Please authenticate again.")
+
+	settings, err := runProviderForm(entry.Type, nil)
+	if err != nil {
+		return err
+	}
+
+	entry.Settings = settings
+	if err := cfg.Write(); err != nil {
+		return err
+	}
+
+	fmt.Println(tui.Success.Render(fmt.Sprintf("Provider %q re-authenticated successfully.", label)))
+	return nil
 }
 
 // runProviderForm runs the appropriate form for a provider type and returns settings.

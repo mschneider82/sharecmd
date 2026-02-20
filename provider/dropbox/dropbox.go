@@ -77,8 +77,12 @@ func writeTokens(filePath string, tokens TokenMap) {
 
 // Provider implements a provider using dropbox sdk
 type Provider struct {
-	Config dropbox.Config
-	token  string
+	Config         dropbox.Config
+	token          *oauth2.Token
+	oauthConfig    *oauth2.Config
+	tokenSource    oauth2.TokenSource
+	onTokenRefresh func(newToken *oauth2.Token)
+	isLegacyToken  bool
 }
 
 // NewProvider creates a new Provider.
@@ -91,14 +95,57 @@ func NewProvider(tokenJSON string) *Provider {
 	if err := json.Unmarshal([]byte(tokenJSON), &tok); err == nil && tok.AccessToken != "" && tok.RefreshToken != "" {
 		// Full token with refresh support — build an HTTP client that auto-refreshes.
 		oauthCfg := OAuth2DropboxConfig()
-		httpClient := oauthCfg.Client(context.Background(), &tok)
-		cfg.Client = httpClient
-	} else {
-		// Legacy: plain access token string (will stop working once token expires).
-		cfg.Token = tokenJSON
+		p := &Provider{
+			Config:      cfg,
+			token:       &tok,
+			oauthConfig: oauthCfg,
+		}
+		p.tokenSource = &notifyingTokenSource{
+			src: oauthCfg.TokenSource(context.Background(), &tok),
+			onRefresh: func(newToken *oauth2.Token) {
+				p.token = newToken
+				if p.onTokenRefresh != nil {
+					p.onTokenRefresh(newToken)
+				}
+			},
+		}
+		p.Config.Client = oauth2.NewClient(context.Background(), p.tokenSource)
+		return p
 	}
 
-	return &Provider{Config: cfg}
+	// Legacy: plain access token string (will stop working once token expires).
+	cfg.Token = tokenJSON
+	return &Provider{Config: cfg, isLegacyToken: true}
+}
+
+// SetTokenRefreshCallback sets a callback that's invoked when the token is refreshed
+func (c *Provider) SetTokenRefreshCallback(callback func(newToken *oauth2.Token)) {
+	if c.isLegacyToken {
+		return // Legacy tokens don't support refresh
+	}
+	c.onTokenRefresh = callback
+}
+
+// GetCurrentToken returns the current (possibly refreshed) token
+func (c *Provider) GetCurrentToken() *oauth2.Token {
+	return c.token
+}
+
+// notifyingTokenSource wraps a TokenSource and calls a callback on token refresh
+type notifyingTokenSource struct {
+	src       oauth2.TokenSource
+	onRefresh func(*oauth2.Token)
+}
+
+func (n *notifyingTokenSource) Token() (*oauth2.Token, error) {
+	token, err := n.src.Token()
+	if err != nil {
+		return nil, err
+	}
+	if n.onRefresh != nil {
+		n.onRefresh(token)
+	}
+	return token, nil
 }
 
 // Upload the file to dropbox

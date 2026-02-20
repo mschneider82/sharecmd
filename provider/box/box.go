@@ -33,8 +33,10 @@ var (
 
 // Provider implements a Box provider
 type Provider struct {
-	config *oauth2.Config
-	token  *oauth2.Token
+	config      *oauth2.Config
+	token       *oauth2.Token
+	tokenSource oauth2.TokenSource
+	onTokenRefresh func(newToken *oauth2.Token)
 }
 
 // OAuth2BoxConfig returns the OAuth2 config for Box
@@ -57,11 +59,52 @@ func NewProvider(token string) *Provider {
 	if err := json.Unmarshal([]byte(token), tok); err != nil {
 		log.Fatalf("Unable to parse Box token: %v", err)
 	}
-	return &Provider{token: tok, config: OAuth2BoxConfig()}
+	cfg := OAuth2BoxConfig()
+	p := &Provider{
+		token:  tok,
+		config: cfg,
+	}
+	p.tokenSource = &notifyingTokenSource{
+		src: cfg.TokenSource(context.Background(), tok),
+		onRefresh: func(newToken *oauth2.Token) {
+			p.token = newToken
+			if p.onTokenRefresh != nil {
+				p.onTokenRefresh(newToken)
+			}
+		},
+	}
+	return p
+}
+
+// SetTokenRefreshCallback sets a callback that's invoked when the token is refreshed
+func (p *Provider) SetTokenRefreshCallback(callback func(newToken *oauth2.Token)) {
+	p.onTokenRefresh = callback
+}
+
+// GetCurrentToken returns the current (possibly refreshed) token
+func (p *Provider) GetCurrentToken() *oauth2.Token {
+	return p.token
 }
 
 func (p *Provider) httpClient() *http.Client {
-	return p.config.Client(context.Background(), p.token)
+	return oauth2.NewClient(context.Background(), p.tokenSource)
+}
+
+// notifyingTokenSource wraps a TokenSource and calls a callback on token refresh
+type notifyingTokenSource struct {
+	src       oauth2.TokenSource
+	onRefresh func(*oauth2.Token)
+}
+
+func (n *notifyingTokenSource) Token() (*oauth2.Token, error) {
+	token, err := n.src.Token()
+	if err != nil {
+		return nil, err
+	}
+	if n.onRefresh != nil {
+		n.onRefresh(token)
+	}
+	return token, nil
 }
 
 // Upload uploads a file to Box inside a "sharecmd" folder and returns the file ID
