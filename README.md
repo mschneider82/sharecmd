@@ -91,6 +91,7 @@ $ share [flags] [file] [provider]
 | Flag | Description |
 |------|-------------|
 | `--setup`, `-s` | Launch interactive setup |
+| `--select`, `-p` | Select provider for this upload interactively |
 | `--version`, `-v` | Print version and exit |
 | `--config PATH` | Path to config file (default: `~/.config/sharecmd/config.json`) |
 
@@ -107,6 +108,29 @@ $ share my-nextcloud report.pdf   # Upload to provider labeled "my-nextcloud"
 ```
 
 If an argument matches a configured provider label, that provider is used instead of the default active provider.
+
+**Interactive provider selection:**
+
+Use the `--select` (or `-p`) flag to choose a provider interactively:
+
+```
+$ share --select document.pdf
+? Select provider for this upload
+  > my-dropbox (dropbox)
+    work-nextcloud (nextcloud)
+    personal-gdrive (googledrive)
+```
+
+If you provide an invalid provider name, an interactive menu appears automatically:
+
+```
+$ share dr document.pdf
+Argument "dr" is not a configured provider.
+? Select provider for this upload
+  > my-dropbox (dropbox)
+    work-nextcloud (nextcloud)
+    personal-gdrive (googledrive)
+```
 
 # Notes
 

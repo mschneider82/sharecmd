@@ -24,8 +24,10 @@ import (
 
 // Provider implements a provider
 type Provider struct {
-	Config *oauth2.Config
-	token  *oauth2.Token
+	Config         *oauth2.Config
+	token          *oauth2.Token
+	tokenSource    oauth2.TokenSource
+	onTokenRefresh func(newToken *oauth2.Token)
 }
 
 var mimeExtentions = map[string]string{
@@ -83,11 +85,52 @@ func NewProvider(token string) *Provider {
 		log.Fatalf("Unable to parse config file: %v", err)
 	}
 
-	return &Provider{token: tok, Config: OAuth2GoogleDriveConfig()}
+	cfg := OAuth2GoogleDriveConfig()
+	p := &Provider{
+		token:  tok,
+		Config: cfg,
+	}
+	p.tokenSource = &notifyingTokenSource{
+		src: cfg.TokenSource(context.Background(), tok),
+		onRefresh: func(newToken *oauth2.Token) {
+			p.token = newToken
+			if p.onTokenRefresh != nil {
+				p.onTokenRefresh(newToken)
+			}
+		},
+	}
+	return p
+}
+
+// SetTokenRefreshCallback sets a callback that's invoked when the token is refreshed
+func (c *Provider) SetTokenRefreshCallback(callback func(newToken *oauth2.Token)) {
+	c.onTokenRefresh = callback
+}
+
+// GetCurrentToken returns the current (possibly refreshed) token
+func (c *Provider) GetCurrentToken() *oauth2.Token {
+	return c.token
 }
 
 func (c *Provider) getClient() *http.Client {
-	return c.Config.Client(context.Background(), c.token)
+	return oauth2.NewClient(context.Background(), c.tokenSource)
+}
+
+// notifyingTokenSource wraps a TokenSource and calls a callback on token refresh
+type notifyingTokenSource struct {
+	src       oauth2.TokenSource
+	onRefresh func(*oauth2.Token)
+}
+
+func (n *notifyingTokenSource) Token() (*oauth2.Token, error) {
+	token, err := n.src.Token()
+	if err != nil {
+		return nil, err
+	}
+	if n.onRefresh != nil {
+		n.onRefresh(token)
+	}
+	return token, nil
 }
 
 // Upload the file
