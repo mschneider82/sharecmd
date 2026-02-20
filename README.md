@@ -85,7 +85,7 @@ brew install sharecmd
 # CLI Usage
 
 ```
-$ share [flags] [file]
+$ share [flags] [file] [provider]
 ```
 
 | Flag | Description |
@@ -95,6 +95,18 @@ $ share [flags] [file]
 | `--config PATH` | Path to config file (default: `~/.config/sharecmd/config.json`) |
 
 If no active provider is configured, setup launches automatically.
+
+## Provider Override
+
+You can temporarily override the active provider by specifying its label as an argument. The order of arguments doesn't matter:
+
+```
+$ share filename.zip dropbox      # Upload to dropbox
+$ share dropbox filename.zip      # Same as above
+$ share my-nextcloud report.pdf   # Upload to provider labeled "my-nextcloud"
+```
+
+If an argument matches a configured provider label, that provider is used instead of the default active provider.
 
 # Notes
 

@@ -28,10 +28,10 @@ import (
 var version = "0.0.0"
 
 type CLI struct {
-	Config  string `help:"Path to config file." default:"~/.config/sharecmd/config.json" type:"path"`
-	Setup   bool   `help:"Launch interactive setup." short:"s"`
-	Version bool   `help:"Print version and exit." short:"v"`
-	File    string `arg:"" optional:"" help:"File to upload." type:"existingfile"`
+	Config  string   `help:"Path to config file." default:"~/.config/sharecmd/config.json" type:"path"`
+	Setup   bool     `help:"Launch interactive setup." short:"s"`
+	Version bool     `help:"Print version and exit." short:"v"`
+	Args    []string `arg:"" optional:"" help:"File to upload and optional provider name."`
 }
 
 func main() {
@@ -61,7 +61,7 @@ func main() {
 		if err := setup.Run(cfg); err != nil {
 			log.Fatalf("Setup failed: %v\n", err)
 		}
-		if cli.File == "" {
+		if len(cli.Args) == 0 {
 			os.Exit(0)
 		}
 		// Reload config after setup
@@ -71,13 +71,41 @@ func main() {
 		}
 	}
 
-	if cli.File == "" {
+	// Parse args: extract filename and optional provider override
+	var filename string
+	var providerLabel string
+
+	for _, arg := range cli.Args {
+		// Check if arg matches a configured provider label
+		if cfg.FindByLabel(arg) != nil {
+			providerLabel = arg
+		} else {
+			// Assume it's the filename
+			filename = arg
+		}
+	}
+
+	if filename == "" {
 		os.Exit(0)
 	}
 
-	active := cfg.ActiveProvider()
-	if active == nil {
-		log.Fatal("No active provider configured. Run 'share --setup' to configure.")
+	// Verify file exists
+	if _, err := os.Stat(filename); err != nil {
+		log.Fatalf("File not found: %s\n", filename)
+	}
+
+	// Determine which provider to use
+	var active *config.ProviderEntry
+	if providerLabel != "" {
+		active = cfg.FindByLabel(providerLabel)
+		if active == nil {
+			log.Fatalf("Provider %q not found in config\n", providerLabel)
+		}
+	} else {
+		active = cfg.ActiveProvider()
+		if active == nil {
+			log.Fatal("No active provider configured. Run 'share --setup' to configure.")
+		}
 	}
 
 	prov, err := instantiateProvider(active)
@@ -85,7 +113,7 @@ func main() {
 		log.Fatalf("Failed to create provider: %v\n", err)
 	}
 
-	file, err := os.Open(cli.File)
+	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf("Can't open file: %v\n", err)
 	}
@@ -95,19 +123,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Can't stat file: %v\n", err)
 	}
-	filename := filepath.Base(file.Name())
+	basename := filepath.Base(file.Name())
 	filesize := fileInfo.Size()
 
 	// Upload with progress TUI
 	var fileID string
 	var uploadErr error
 
-	model := upload.NewModel(filename, filesize)
+	model := upload.NewModel(basename, filesize)
 	p := tea.NewProgram(model)
 	pr := upload.NewProgressReader(file, filesize, p)
 
 	go func() {
-		fileID, uploadErr = prov.Upload(pr, filename, filesize)
+		fileID, uploadErr = prov.Upload(pr, basename, filesize)
 		upload.SendDone(p, fileID, uploadErr)
 	}()
 
