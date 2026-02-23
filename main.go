@@ -30,7 +30,7 @@ import (
 var version = "0.0.0"
 
 type CLI struct {
-	Config  string   `help:"Path to config file." default:"~/.config/sharecmd/config.json" type:"path"`
+	Config  string   `help:"Path to config file (default: ${defaultConfigPath})." type:"path"`
 	Setup   bool     `help:"Launch interactive setup." short:"s"`
 	Select  bool     `help:"Select provider for this upload." short:"p"`
 	Version bool     `help:"Print version and exit." short:"v"`
@@ -43,6 +43,9 @@ func main() {
 		kong.Name("share"),
 		kong.Description("Upload files to cloud storage and get a shareable link."),
 		kong.UsageOnError(),
+		kong.Vars{
+			"defaultConfigPath": config.DefaultConfigPath(),
+		},
 	)
 
 	if cli.Version {
