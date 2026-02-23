@@ -62,6 +62,10 @@ func UserHomeDir() string {
 
 // DefaultConfigPath returns the default config file path.
 func DefaultConfigPath() string {
+	// Check if running as a snap
+	if snapUserCommon := os.Getenv("SNAP_USER_COMMON"); snapUserCommon != "" {
+		return snapUserCommon + "/config.json"
+	}
 	return UserHomeDir() + "/.config/sharecmd/config.json"
 }
 
