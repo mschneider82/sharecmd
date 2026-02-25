@@ -19,15 +19,10 @@ Share your files with your friends using cloud providers with just one command.
 
 # How to share?
 
+![demo](demo.gif)
+
 ```
 $ share somedocument.pdf
-Uploading somedocument.pdf
-
-████████████████████████████████████████  100%
-361 B / 361 B  120.3 KiB/s
-
-URL: https://drive.google.com/file/d/1C77TZ.../view?usp=sharing
-URL copied to clipboard!
 ```
 
 # How to setup?
