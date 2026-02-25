@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/dropbox/dropbox-sdk-go-unofficial/v6 v6.0.5
-	github.com/mdp/qrterminal v1.0.1
+	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/mschneider82/easygo v0.0.0-20180731142950-f2a24982ceed
 	github.com/sethvargo/go-password v0.3.1
 	github.com/spf13/cast v1.10.0
@@ -62,6 +62,7 @@ require (
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d // indirect
 	google.golang.org/grpc v1.79.1 // indirect
