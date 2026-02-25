@@ -244,7 +244,7 @@ func main() {
 
 	if cfg.ShowQRCodeEnabled() {
 		fmt.Println()
-		if qrterminal.IsSixelSupported(os.Stdout) {
+		if cfg.IsSixelEnabled() && qrterminal.IsSixelSupported(os.Stdout) {
 			qrterminal.Generate(link, qrterminal.L, os.Stdout)
 		} else {
 			qrterminal.GenerateHalfBlock(link, qrterminal.L, os.Stdout)

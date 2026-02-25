@@ -22,6 +22,7 @@ type Config struct {
 	Providers       []ProviderEntry `json:"providers"`
 	CopyToClipboard *bool           `json:"copy_to_clipboard,omitempty"`
 	ShowQRCode      *bool           `json:"show_qr_code,omitempty"`
+	SixelEnabled    *bool           `json:"sixel_enabled,omitempty"`
 	Path            string          `json:"-"`
 }
 
@@ -39,6 +40,14 @@ func (c *Config) ShowQRCodeEnabled() bool {
 		return true
 	}
 	return *c.ShowQRCode
+}
+
+// IsSixelEnabled returns whether Sixel rendering is enabled (default: true).
+func (c *Config) IsSixelEnabled() bool {
+	if c.SixelEnabled == nil {
+		return true
+	}
+	return *c.SixelEnabled
 }
 
 // configV1 is the legacy single-provider format (version 1 / no version field).

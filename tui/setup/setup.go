@@ -253,6 +253,7 @@ func deleteProvider(cfg *config.Config) error {
 func editPreferences(cfg *config.Config) error {
 	copyClip := cfg.CopyToClipboardEnabled()
 	showQR := cfg.ShowQRCodeEnabled()
+	sixel := cfg.IsSixelEnabled()
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -262,6 +263,10 @@ func editPreferences(cfg *config.Config) error {
 			huh.NewConfirm().
 				Title("Show QR code after upload?").
 				Value(&showQR),
+			huh.NewConfirm().
+				Title("Use Sixel graphics for QR code?").
+				Description("Sixel renders the QR code as a pixel image. Disable if your terminal does not support it (e.g. ttyd).").
+				Value(&sixel),
 		),
 	)
 	if err := form.Run(); err != nil {
@@ -270,6 +275,7 @@ func editPreferences(cfg *config.Config) error {
 
 	cfg.CopyToClipboard = &copyClip
 	cfg.ShowQRCode = &showQR
+	cfg.SixelEnabled = &sixel
 
 	if err := cfg.Write(); err != nil {
 		return err
