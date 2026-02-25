@@ -10,7 +10,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mdp/qrterminal"
+	"github.com/mdp/qrterminal/v3"
 	"github.com/spf13/cast"
 	"golang.org/x/oauth2"
 	"schneider.vip/share/clipboard"
@@ -243,9 +243,13 @@ func main() {
 	}
 
 	if cfg.ShowQRCodeEnabled() {
-		var qr strings.Builder
-		qrterminal.Generate(link, qrterminal.L, &qr)
-		fmt.Printf("\n%s\n", qr.String())
+		fmt.Println()
+		if qrterminal.IsSixelSupported(os.Stdout) {
+			qrterminal.Generate(link, qrterminal.L, os.Stdout)
+		} else {
+			qrterminal.GenerateHalfBlock(link, qrterminal.L, os.Stdout)
+		}
+		fmt.Println()
 	}
 	fmt.Printf("URL: %s\n", link)
 
