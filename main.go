@@ -108,15 +108,19 @@ func main() {
 			// Check if it looks like a file path (has extension or path separator)
 			looksLikeFile := strings.Contains(arg, ".") || strings.Contains(arg, string(os.PathSeparator))
 			if looksLikeFile {
+				snapHint := ""
+				if os.Getenv("SNAP") != "" {
+					snapHint = " (snap cannot access this path - move the file to your home directory)"
+				}
 				// Provide specific error for file access issues
 				if os.IsNotExist(statErr) {
-					log.Fatalf("File not found: %s\n", arg)
+					log.Fatalf("File not found: %s%s\n", arg, snapHint)
 				}
 				if os.IsPermission(statErr) {
-					log.Fatalf("Permission denied: %s (if using snap, try moving the file to your home directory)\n", arg)
+					log.Fatalf("Permission denied: %s%s\n", arg, snapHint)
 				}
-				// Generic file access error (e.g., snap confinement)
-				log.Fatalf("Cannot access file: %s (if using snap, try moving the file to your home directory)\n", arg)
+				// Generic file access error
+				log.Fatalf("Cannot access file: %s%s\n", arg, snapHint)
 			}
 			// Doesn't look like a file, treat as unknown provider
 			log.Fatalf("Unknown provider: %q. Run 'share --setup' to configure providers.\n", arg)
