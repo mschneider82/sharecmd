@@ -91,7 +91,8 @@ func main() {
 
 	for _, arg := range cli.Args {
 		// First check if it's an existing file (to handle files named like providers)
-		if _, err := os.Stat(arg); err == nil {
+		_, statErr := os.Stat(arg)
+		if statErr == nil {
 			if filename != "" {
 				log.Fatalf("Multiple files specified: %q and %q\n", filename, arg)
 			}
@@ -103,19 +104,22 @@ func main() {
 			}
 			providerLabel = arg
 		} else {
-			// Neither file nor provider - show interactive selector
-			if len(cfg.Providers) == 0 {
-				log.Fatalf("Argument %q is neither an existing file nor a configured provider. No providers configured.\n", arg)
+			// Neither accessible file nor provider
+			// Check if it looks like a file path (has extension or path separator)
+			looksLikeFile := strings.Contains(arg, ".") || strings.Contains(arg, string(os.PathSeparator))
+			if looksLikeFile {
+				// Provide specific error for file access issues
+				if os.IsNotExist(statErr) {
+					log.Fatalf("File not found: %s\n", arg)
+				}
+				if os.IsPermission(statErr) {
+					log.Fatalf("Permission denied: %s (if using snap, try moving the file to your home directory)\n", arg)
+				}
+				// Generic file access error (e.g., snap confinement)
+				log.Fatalf("Cannot access file: %s (if using snap, try moving the file to your home directory)\n", arg)
 			}
-			fmt.Printf("Argument %q is not a configured provider.\n", arg)
-			selected, err := setup.PickProvider(cfg, "Select provider for this upload")
-			if err != nil {
-				log.Fatalf("Provider selection cancelled: %v\n", err)
-			}
-			if providerLabel != "" {
-				log.Fatalf("Multiple providers specified: %q and %q\n", providerLabel, selected)
-			}
-			providerLabel = selected
+			// Doesn't look like a file, treat as unknown provider
+			log.Fatalf("Unknown provider: %q. Run 'share --setup' to configure providers.\n", arg)
 		}
 	}
 
