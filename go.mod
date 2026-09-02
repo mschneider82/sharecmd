@@ -14,7 +14,7 @@ require (
 	github.com/mschneider82/easygo v0.0.0-20180731142950-f2a24982ceed
 	github.com/sethvargo/go-password v0.3.1
 	github.com/spf13/cast v1.10.0
-	golang.org/x/oauth2 v0.35.0
+	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.267.0
 )
 
@@ -56,16 +56,16 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 // indirect
-	go.opentelemetry.io/otel v1.40.0 // indirect
-	go.opentelemetry.io/otel/metric v1.40.0 // indirect
-	go.opentelemetry.io/otel/trace v1.40.0 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/term v0.40.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d // indirect
-	google.golang.org/grpc v1.79.1 // indirect
+	go.opentelemetry.io/otel v1.44.0 // indirect
+	go.opentelemetry.io/otel/metric v1.44.0 // indirect
+	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
+	google.golang.org/grpc v1.83.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
