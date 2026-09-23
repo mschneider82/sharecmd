@@ -160,23 +160,6 @@ func dropboxForm() (*huh.Form, *DropboxFields) {
 	return form, f
 }
 
-func oauthNoteForm(providerName string) (*huh.Form, *bool) {
-	proceed := true
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewNote().
-				Title(providerName + " Authorization").
-				Description("A browser window will open for authorization.\nPress Enter to continue..."),
-			huh.NewConfirm().
-				Title("Open browser?").
-				Affirmative("Continue").
-				Negative("Cancel").
-				Value(&proceed),
-		),
-	)
-	return form, &proceed
-}
-
 func labelForm(defaultLabel string) (*huh.Form, *string) {
 	label := defaultLabel
 	form := huh.NewForm(

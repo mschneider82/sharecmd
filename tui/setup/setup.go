@@ -406,16 +406,9 @@ func runProviderForm(provType string, defaults map[string]string) (map[string]st
 		return map[string]string{"token": string(tokenB)}, nil
 
 	case "box":
-		noteForm, proceed := oauthNoteForm("Box")
-		if err := noteForm.Run(); err != nil {
-			return nil, err
-		}
-		if !*proceed {
-			return nil, fmt.Errorf("cancelled")
-		}
-
 		conf := box.OAuth2BoxConfig()
-		result := RunOAuthFlowFixedPort(conf, "127.0.0.1:53682")
+		// Box requires a fixed redirect URL (pre-registered with Box OAuth app)
+		result := RunOAuthFlowWithManualFallback(conf, "127.0.0.1:53682", true)
 		if result.Err != nil {
 			return nil, result.Err
 		}
@@ -426,16 +419,9 @@ func runProviderForm(provType string, defaults map[string]string) (map[string]st
 		return map[string]string{"token": string(tokenB)}, nil
 
 	case "googledrive":
-		noteForm, proceed := oauthNoteForm("Google Drive")
-		if err := noteForm.Run(); err != nil {
-			return nil, err
-		}
-		if !*proceed {
-			return nil, fmt.Errorf("cancelled")
-		}
-
 		conf := googledrive.OAuth2GoogleDriveConfig()
-		result := RunOAuthFlow(conf, "")
+		// Google Drive supports dynamic redirect URLs
+		result := RunOAuthFlowWithManualFallback(conf, "", false)
 		if result.Err != nil {
 			return nil, result.Err
 		}

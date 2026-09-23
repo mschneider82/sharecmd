@@ -99,7 +99,7 @@ type Provider struct {
 
 func (s *Provider) Upload(r io.Reader, filename string, size int64) (fileID string, err error) {
 	// get upload link
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api2/repos/%s/upload-link/?p=/&replace=1", s.URL, s.RepoID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api2/repos/%s/upload-link/?p=/", s.URL, s.RepoID), nil)
 	if err != nil {
 		return "", err
 	}
@@ -131,9 +131,14 @@ func uploadfile(uploadlink, folder, filename, token string, src io.Reader) (stri
 		return "", err
 	}
 	_, err = io.Copy(part, src)
+	if err != nil {
+		return "", err
+	}
 
 	multipartWriter.WriteField("filename", filename)
 	multipartWriter.WriteField("parent_dir", folder)
+	// overwrite an existing file instead of creating "name (1).ext"
+	multipartWriter.WriteField("replace", "1")
 
 	err = multipartWriter.Close()
 	if err != nil {
@@ -155,11 +160,15 @@ func uploadfile(uploadlink, folder, filename, token string, src io.Reader) (stri
 		return "", err
 	}
 
+	defer resp.Body.Close()
+
 	responsebody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("seafile upload failed: %s: %s", resp.Status, string(responsebody))
+	}
 
 	return string(responsebody), nil
 }
