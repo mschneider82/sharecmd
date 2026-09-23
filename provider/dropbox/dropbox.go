@@ -159,8 +159,8 @@ func (c *Provider) Upload(r io.Reader, filename string, size int64) (dst string,
 	uploadArg := files.NewUploadArg(dst)
 	uploadArg.Mode.Tag = "overwrite"
 
-	// The Dropbox API only accepts timestamps in UTC with second precision.
-	t := time.Now().UTC().Round(time.Second)
+	// DBXTime serializes as UTC with second precision, as the Dropbox API expects.
+	t := dropbox.DBXTime(time.Now())
 	uploadArg.ClientModified = &t
 	if size > chunkSize {
 		return dst, uploadChunked(dbx, r, &uploadArg.CommitInfo, size)
