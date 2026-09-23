@@ -5,21 +5,21 @@
 class Sharecmd < Formula
   desc "Share your files using cloud providers with just one command."
   homepage "https://github.com/mschneider82/sharecmd"
-  version "0.0.154"
+  version "0.0.161"
   license "Apache-2.0"
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.154/sharecmd_Darwin_x86_64.tar.gz"
-      sha256 "a58d88740e22796f45ec8f90646837dcef4bad1d50ad1cb37177e5a15e26bffe"
+      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.161/sharecmd_Darwin_x86_64.tar.gz"
+      sha256 "4876ac63803ebd1f26a5e0fc03c0233ca569a7da74b189f81456b96afdd2502e"
 
       define_method(:install) do
         bin.install "share"
       end
     end
     if Hardware::CPU.arm?
-      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.154/sharecmd_Darwin_arm64.tar.gz"
-      sha256 "00e82b18aefa6a1325b05fd4c483bb375fef454117836e19fda647a734607ab8"
+      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.161/sharecmd_Darwin_arm64.tar.gz"
+      sha256 "2a17dd122ff0ffd561649ea0702b2e5be86edf98381695812f3409983f993a35"
 
       define_method(:install) do
         bin.install "share"
@@ -29,15 +29,15 @@ class Sharecmd < Formula
 
   on_linux do
     if Hardware::CPU.intel? && Hardware::CPU.is_64_bit?
-      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.154/sharecmd_Linux_x86_64.tar.gz"
-      sha256 "42c06dba663769b8dbde4b352d4cc9bc37ffb485009733ef032555540f0693bc"
+      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.161/sharecmd_Linux_x86_64.tar.gz"
+      sha256 "a529bf59971eb83c1e91604042fb5bc1e4c9904d3543756729b9a4817e69d2c7"
       define_method(:install) do
         bin.install "share"
       end
     end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.154/sharecmd_Linux_arm64.tar.gz"
-      sha256 "2c16c865c4141f5544b2fa04f19463100ed6fc86dde3d9d9e0c5367219283aa3"
+      url "https://github.com/mschneider82/sharecmd/releases/download/v0.0.161/sharecmd_Linux_arm64.tar.gz"
+      sha256 "75ee2eee140d2430e13f0d5847829443d21f37223ccbc30308a3abdcb991ae82"
       define_method(:install) do
         bin.install "share"
       end
